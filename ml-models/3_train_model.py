@@ -69,7 +69,7 @@ class GestureModelTrainer:
         X = data['X']
         y = data['y']
         
-        print(f"✓ Loaded {len(X)} sequences")
+        print(f"Loaded {len(X)} sequences")
         print(f"  Shape: {X.shape}")
         
         # Display label distribution
@@ -101,17 +101,17 @@ class GestureModelTrainer:
             # First LSTM layer - captures long-term patterns
             keras.layers.LSTM(128, return_sequences=True),
             keras.layers.BatchNormalization(),
-            keras.layers.Dropout(0.3),
+            keras.layers.Dropout(0.2),  # Reduced from 0.3 - less aggressive for small dataset
             
             # Second LSTM layer - refines features
             keras.layers.LSTM(64, return_sequences=True),
             keras.layers.BatchNormalization(),
-            keras.layers.Dropout(0.3),
+            keras.layers.Dropout(0.2),  # Reduced from 0.3
             
             # Third LSTM layer - final temporal processing
             keras.layers.LSTM(32),
             keras.layers.BatchNormalization(),
-            keras.layers.Dropout(0.3),
+            keras.layers.Dropout(0.2),  # Reduced from 0.3
             
             # Dense layers for classification
             keras.layers.Dense(64, activation='relu'),
@@ -122,15 +122,16 @@ class GestureModelTrainer:
             keras.layers.Dense(num_classes, activation='softmax')
         ], name='GestureRecognitionModel')
         
+        # Lower learning rate for better convergence on small dataset
         model.compile(
-            optimizer=keras.optimizers.Adam(learning_rate=0.001),
+            optimizer=keras.optimizers.Adam(learning_rate=0.0005),
             loss='sparse_categorical_crossentropy',
             metrics=['accuracy']
         )
         
         return model
     
-    def train(self, X, y, epochs=50, batch_size=32, validation_split=0.2):
+    def train(self, X, y, epochs=100, batch_size=16, validation_split=0.2):
         """
         Train the gesture recognition model
         
@@ -156,7 +157,11 @@ class GestureModelTrainer:
         
         # Create model
         input_shape = (X.shape[1], X.shape[2])
-        self.model = self.create_model(input_shape)
+        num_classes = len(np.unique(y))
+        self.model = self.create_model(input_shape, num_classes=num_classes)
+        
+        print(f"\nCreating model for {num_classes} classes")
+        print(f"Classes: {[self.label_names[i] for i in sorted(np.unique(y))]}")
         
         print(f"\n" + "-"*60)
         print("Model Architecture:")
@@ -168,7 +173,7 @@ class GestureModelTrainer:
             # Stop training if validation loss doesn't improve
             keras.callbacks.EarlyStopping(
                 monitor='val_loss',
-                patience=10,
+                patience=15,  # Increased patience for more thorough training
                 restore_best_weights=True,
                 verbose=1
             ),
@@ -190,6 +195,21 @@ class GestureModelTrainer:
             )
         ]
         
+        # Calculate class weights to handle imbalanced data
+        from sklearn.utils.class_weight import compute_class_weight
+        
+        unique_classes = np.unique(y_train)
+        class_weights_array = compute_class_weight(
+            'balanced',
+            classes=unique_classes,
+            y=y_train
+        )
+        class_weights = {int(cls): weight for cls, weight in zip(unique_classes, class_weights_array)}
+        
+        print(f"\nClass weights (to balance training):")
+        for cls, weight in class_weights.items():
+            print(f"  {self.label_names[cls]:8}: {weight:.2f}")
+        
         # Train model
         print("\n" + "-"*60)
         print("Starting training...")
@@ -203,6 +223,7 @@ class GestureModelTrainer:
             epochs=epochs,
             batch_size=batch_size,
             callbacks=callbacks,
+            class_weight=class_weights,
             verbose=1
         )
         
@@ -259,7 +280,7 @@ class GestureModelTrainer:
         # Save final model
         model_file = self.model_path / "gesture_classifier.h5"
         self.model.save(str(model_file))
-        print(f"\n✓ Model saved to: {model_file}")
+        print(f"\nModel saved to: {model_file}")
         
         # Save training information
         info = {
@@ -281,7 +302,7 @@ class GestureModelTrainer:
         info_file = self.model_path / "model_info.json"
         with open(str(info_file), 'w') as f:
             json.dump(info, f, indent=2)
-        print(f"✓ Training info saved to: {info_file}")
+        print(f"Training info saved to: {info_file}")
         
         # Plot training history
         self.plot_training_history()
@@ -313,7 +334,7 @@ class GestureModelTrainer:
         plt.tight_layout()
         plot_file = self.model_path / "training_history.png"
         plt.savefig(str(plot_file), dpi=150, bbox_inches='tight')
-        print(f"✓ Training plot saved to: {plot_file}")
+        print(f"Training plot saved to: {plot_file}")
         plt.close()
 
 def main():
@@ -330,7 +351,7 @@ def main():
     print("  5. Save the trained model")
     
     print("\n" + "-"*60)
-    input("Press Enter to start training...")
+    # input("Press Enter to start training...")
     
     trainer = GestureModelTrainer()
     
@@ -341,18 +362,19 @@ def main():
         print("\n" + "-"*60)
         print("Training Configuration:")
         print("-"*60)
-        print(f"  Max epochs:        50")
-        print(f"  Batch size:        32")
+        print(f"  Max epochs:        100")
+        print(f"  Batch size:        16 (optimized for small dataset)")
         print(f"  Validation split:  20%")
         print(f"  Optimizer:         Adam")
-        print(f"  Learning rate:     0.001")
+        print(f"  Learning rate:     0.0005 (reduced for stability)")
+        print(f"  Dropout:           0.2 (reduced for small dataset)")
         print("-"*60)
         
         # Train model
-        model = trainer.train(X, y, epochs=50, batch_size=32)
+        model = trainer.train(X, y, epochs=100, batch_size=16)
         
         print("\n" + "="*60)
-        print("✓ TRAINING COMPLETE!")
+        print("TRAINING COMPLETE!")
         print("="*60)
         print("\nYour model is ready to use!")
         print("\nNext step: Run 'python 4_test_model.py'")

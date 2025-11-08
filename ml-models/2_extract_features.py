@@ -47,25 +47,35 @@ class FeatureExtractor:
             min_tracking_confidence=0.5
         )
         
-        # Key landmark indices for head pose estimation
-        # These points capture head movement well:
-        # 1: nose tip, 10: forehead, 152: chin
-        # 33: left eye outer, 263: right eye outer
-        # 61: left mouth, 291: right mouth, 199: mouth center
-        self.key_landmarks = [1, 10, 152, 33, 263, 61, 291, 199]
+        # Focused landmarks for head movement detection
+        # YES (vertical nod): Track points that move up/down
+        # NO (horizontal shake): Track points that move left/right
+        # NEUTRAL: Same points but with minimal movement
+        
+        # Vertical movement landmarks (for YES - nodding up/down):
+        # 1: nose tip, 10: forehead center, 152: chin center
+        self.vertical_landmarks = [1, 10, 152]
+        
+        # Horizontal movement landmarks (for NO - shaking left/right):
+        # 33: left eye outer corner, 263: right eye outer corner
+        # 1: nose tip (also moves horizontally when shaking)
+        self.horizontal_landmarks = [1, 33, 263]
+        
+        # All key landmarks (union of both sets)
+        self.key_landmarks = sorted(list(set(self.vertical_landmarks + self.horizontal_landmarks)))
         
         self.categories = ["yes", "no", "neutral"]
         self.label_map = {"yes": 0, "no": 1, "neutral": 2}
     
     def extract_landmarks_from_frame(self, frame):
         """
-        Extract facial landmarks from a single frame
+        Extract facial landmarks and compute movement-focused features
         
         Args:
             frame: BGR image from OpenCV
             
         Returns:
-            numpy array of shape (24,) containing x,y,z coordinates of 8 landmarks
+            numpy array of shape (feature_dim,) containing movement features
             or None if no face detected
         """
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -76,13 +86,49 @@ class FeatureExtractor:
         
         face_landmarks = results.multi_face_landmarks[0]
         
-        # Extract key landmarks (x, y, z coordinates)
-        landmarks = []
-        for idx in self.key_landmarks:
-            landmark = face_landmarks.landmark[idx]
-            landmarks.extend([landmark.x, landmark.y, landmark.z])
+        # Extract raw landmark positions
+        vertical_positions = []
+        horizontal_positions = []
         
-        return np.array(landmarks)
+        for idx in self.vertical_landmarks:
+            landmark = face_landmarks.landmark[idx]
+            vertical_positions.append([landmark.x, landmark.y, landmark.z])
+        
+        for idx in self.horizontal_landmarks:
+            landmark = face_landmarks.landmark[idx]
+            horizontal_positions.append([landmark.x, landmark.y, landmark.z])
+        
+        vertical_positions = np.array(vertical_positions)
+        horizontal_positions = np.array(horizontal_positions)
+        
+        # Compute movement-focused features:
+        # Focus on coordinates that change most for each gesture type
+        
+        features = []
+        
+        # Vertical movement features (YES - up/down motion)
+        # Use y-coordinates of vertical landmarks (nose, forehead, chin)
+        # These move up/down when nodding
+        vertical_y = vertical_positions[:, 1]  # y-coordinates
+        features.extend(vertical_y.tolist())  # 3 features: nose_y, forehead_y, chin_y
+        
+        # Horizontal movement features (NO - left/right motion)
+        # Use x-coordinates of horizontal landmarks (nose, left eye, right eye)
+        # These move left/right when shaking head
+        horizontal_x = horizontal_positions[:, 0]  # x-coordinates
+        features.extend(horizontal_x.tolist())  # 3 features: nose_x, left_eye_x, right_eye_x
+        
+        # Add z-coordinates for depth (helps with 3D movement)
+        vertical_z = vertical_positions[:, 2]  # z-coordinates (depth)
+        features.extend(vertical_z.tolist())  # 3 features: nose_z, forehead_z, chin_z
+        
+        # Total: 9 features (3 vertical_y + 3 horizontal_x + 3 vertical_z)
+        # This focuses the model on:
+        # - YES: High variance in vertical_y coordinates
+        # - NO: High variance in horizontal_x coordinates  
+        # - NEUTRAL: Low variance in all coordinates
+        
+        return np.array(features)
     
     def process_video(self, video_path, sequence_length=30):
         """
@@ -160,8 +206,11 @@ class FeatureExtractor:
         print("\n" + "="*60)
         print(" "*15 + "FEATURE EXTRACTION")
         print("="*60)
-        print(f"\nSequence length: {sequence_length} frames (~1 second at 30fps)")
-        print(f"Feature dimensions: {len(self.key_landmarks) * 3} (8 landmarks × 3 coordinates)")
+        print(f"\nSequence length: {sequence_length} frames (~{sequence_length/30:.2f} seconds at 30fps)")
+        print(f"Feature extraction strategy:")
+        print(f"  - Vertical landmarks (YES): {len(self.vertical_landmarks)} points")
+        print(f"  - Horizontal landmarks (NO): {len(self.horizontal_landmarks)} points")
+        print(f"  - Focus: Movement patterns (vertical for YES, horizontal for NO)")
         
         start_time = time.time()
         
@@ -172,8 +221,11 @@ class FeatureExtractor:
                          list(category_path.glob("*.mov")) + \
                          list(category_path.glob("*.MOV"))
             
+            # Remove duplicates (Windows is case-insensitive)
+            video_files = list(set(video_files))
+            
             if len(video_files) == 0:
-                print(f"\n⚠ WARNING: No videos found in {category}/")
+                print(f"\n[WARNING] No videos found in {category}/")
                 continue
             
             print(f"\n{category.upper()}: Processing {len(video_files)} videos...")
@@ -201,14 +253,14 @@ class FeatureExtractor:
                 "avg_face_detection_rate": f"{avg_detection_rate:.1f}%"
             }
             
-            print(f"  ✓ {len(video_files)} videos → {sequences_count} training sequences")
+            print(f"  {len(video_files)} videos -> {sequences_count} training sequences")
             print(f"    Average face detection rate: {avg_detection_rate:.1f}%")
         
         extraction_time = time.time() - start_time
         stats["extraction_time"] = f"{extraction_time:.2f} seconds"
         
         if len(all_sequences) == 0:
-            print("\n❌ ERROR: No features extracted!")
+            print("\n[ERROR] No features extracted!")
             print("   Please check your videos and ensure faces are visible.")
             return None
         
@@ -252,7 +304,7 @@ class FeatureExtractor:
             print(f"  {label_name.upper():8}: {count:4} samples ({percentage:.1f}%)")
         
         print("\n" + "="*60)
-        print("✓ READY FOR TRAINING!")
+        print("READY FOR TRAINING!")
         print("="*60)
         print("\nNext step: Run 'python 3_train_model.py'")
         print("           This will train the gesture recognition model.")
@@ -273,15 +325,17 @@ def main():
     print("  4. Save processed data for model training")
     
     print("\n" + "-"*60)
-    input("Press Enter to start extraction...")
+    # input("Press Enter to start extraction...")
     
     extractor = FeatureExtractor()
-    result = extractor.extract_all_features(sequence_length=30)
+    # OPTIMIZED FOR FAST + ACCURATE DETECTION: 15 frames = ~0.5 seconds
+    # This is the sweet spot: fast enough for Tinder-style apps, long enough to capture full gesture
+    result = extractor.extract_all_features(sequence_length=15)
     
     if result is not None:
-        print("\n✓ Feature extraction completed successfully!")
+        print("\nFeature extraction completed successfully!")
     else:
-        print("\n❌ Feature extraction failed!")
+        print("\n[ERROR] Feature extraction failed!")
         print("   Please check the error messages above.")
 
 if __name__ == "__main__":

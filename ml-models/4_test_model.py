@@ -72,7 +72,12 @@ class GestureTester:
         )
         
         # Key landmarks (must match training)
-        self.key_landmarks = [1, 10, 152, 33, 263, 61, 291, 199]
+        # Focused on movement-specific landmarks:
+        # Vertical landmarks (YES - nodding): 1 (nose), 10 (forehead), 152 (chin)
+        # Horizontal landmarks (NO - shaking): 1 (nose), 33 (left eye), 263 (right eye)
+        self.vertical_landmarks = [1, 10, 152]
+        self.horizontal_landmarks = [1, 33, 263]
+        self.key_landmarks = sorted(list(set(self.vertical_landmarks + self.horizontal_landmarks)))
         
         # Frame buffer for sequences
         self.frame_buffer = deque(maxlen=self.sequence_length)
@@ -82,13 +87,13 @@ class GestureTester:
         self.total_predictions = 0
         self.show_stats = False
         
-        print(f"✓ Model loaded successfully")
+        print(f"[OK] Model loaded successfully")
         print(f"  Trained on: {self.info['training_date']}")
         print(f"  Validation accuracy: {self.info['val_accuracy']*100:.2f}%")
         print(f"  Sequence length: {self.sequence_length} frames")
     
     def extract_landmarks(self, frame):
-        """Extract facial landmarks from a frame"""
+        """Extract facial landmarks and compute movement-focused features (must match training)"""
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = self.face_mesh.process(rgb_frame)
         
@@ -96,13 +101,39 @@ class GestureTester:
             return None
         
         face_landmarks = results.multi_face_landmarks[0]
-        landmarks = []
         
-        for idx in self.key_landmarks:
+        # Extract raw landmark positions
+        vertical_positions = []
+        horizontal_positions = []
+        
+        for idx in self.vertical_landmarks:
             landmark = face_landmarks.landmark[idx]
-            landmarks.extend([landmark.x, landmark.y, landmark.z])
+            vertical_positions.append([landmark.x, landmark.y, landmark.z])
         
-        return np.array(landmarks)
+        for idx in self.horizontal_landmarks:
+            landmark = face_landmarks.landmark[idx]
+            horizontal_positions.append([landmark.x, landmark.y, landmark.z])
+        
+        vertical_positions = np.array(vertical_positions)
+        horizontal_positions = np.array(horizontal_positions)
+        
+        # Compute movement-focused features (matching training):
+        features = []
+        
+        # Vertical movement features (YES - up/down motion)
+        vertical_y = vertical_positions[:, 1]  # y-coordinates
+        features.extend(vertical_y.tolist())  # 3 features
+        
+        # Horizontal movement features (NO - left/right motion)
+        horizontal_x = horizontal_positions[:, 0]  # x-coordinates
+        features.extend(horizontal_x.tolist())  # 3 features
+        
+        # Add z-coordinates for depth
+        vertical_z = vertical_positions[:, 2]  # z-coordinates
+        features.extend(vertical_z.tolist())  # 3 features
+        
+        # Total: 9 features (matching training extraction)
+        return np.array(features)
     
     def predict_gesture(self):
         """Predict gesture from frame buffer"""
@@ -253,7 +284,7 @@ class GestureTester:
         cap = cv2.VideoCapture(camera_index)
         
         if not cap.isOpened():
-            print("❌ Cannot open webcam")
+            print("[ERROR] Cannot open webcam")
             print("   Make sure your webcam is connected and not in use")
             return
         
@@ -362,7 +393,7 @@ class GestureTester:
                 pct = count / self.total_predictions * 100
                 print(f"  {gesture:8}: {count:4} ({pct:.1f}%)")
         print("\n" + "="*60)
-        print("✓ Testing complete")
+        print("[OK] Testing complete")
 
 def main():
     print("\n" + "="*60)
@@ -374,17 +405,19 @@ def main():
         tester = GestureTester()
         
         print("\n" + "-"*60)
-        input("Press Enter to start webcam testing...")
+        print("Starting webcam testing...")
+        print("(Press Q to quit when webcam window opens)")
+        print("-"*60)
         
         tester.test_webcam()
         
     except FileNotFoundError as e:
-        print(f"\n❌ Error: {e}")
+        print(f"\n[ERROR] Error: {e}")
         print("\nPlease complete these steps first:")
         print("  1. python 2_extract_features.py")
         print("  2. python 3_train_model.py")
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        print(f"\n[ERROR] Error: {e}")
         import traceback
         traceback.print_exc()
 
