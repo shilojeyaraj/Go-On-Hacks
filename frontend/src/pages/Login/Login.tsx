@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthService } from '../../services/auth.service';
+import { UserSyncService } from '../../services/user-sync.service';
 import { Button } from '../../components/Button/Button';
 import { Input } from '../../components/Input/Input';
 import { Navigation } from '../../components/Navigation/Navigation';
@@ -32,6 +33,8 @@ export const Login: React.FC = () => {
 
     try {
       await AuthService.signIn(email, password);
+      // Sync user to MongoDB after successful login
+      await UserSyncService.syncUser();
       navigate('/');
     } catch (err: any) {
       setError(err.message || 'Failed to sign in');
@@ -46,6 +49,8 @@ export const Login: React.FC = () => {
 
     try {
       await AuthService.signInWithGoogle();
+      // Sync user to MongoDB after successful Google login
+      await UserSyncService.syncUser();
       navigate('/');
     } catch (err: any) {
       setError(err.message || 'Failed to sign in with Google');

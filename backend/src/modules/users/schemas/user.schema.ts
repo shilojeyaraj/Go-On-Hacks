@@ -22,6 +22,46 @@ export class User {
 
   @Prop({ type: Object })
   providerData?: any;
+
+  // Profile fields
+  @Prop()
+  fullName?: string;
+
+  @Prop()
+  profilePicture?: string;
+
+  @Prop({ type: [String], default: [] })
+  feetPhotos?: string[];
+
+  @Prop()
+  bio?: string;
+
+  // Preferences fields
+  @Prop()
+  archType?: string;
+
+  @Prop()
+  archSize?: string;
+
+  @Prop()
+  age?: number;
+
+  @Prop()
+  familyStatus?: string;
+
+  @Prop({ type: [String], default: [] })
+  preferredArchTypes?: string[];
+
+  @Prop({ type: [String], default: [] })
+  preferredArchSizes?: string[];
+
+  // Profile completion status
+  @Prop({ default: false })
+  profileCompleted?: boolean;
+
+  // Timestamps (automatically added by Mongoose when timestamps: true)
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
