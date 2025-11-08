@@ -1,0 +1,22 @@
+{
+  "training_date": "2025-11-08T16:38:29.211578",
+  "train_accuracy": 0.8708240389823914,
+  "val_accuracy": 0.8230088353157043,
+  "train_loss": 0.2864888608455658,
+  "val_loss": 0.38254818320274353,
+  "epochs_trained": 51,
+  "total_epochs": 100,
+  "batch_size": 16,
+  "training_time_seconds": 84.97716927528381,
+  "input_shape": [
+    15,
+    9
+  ],
+  "num_classes": 3,
+  "label_map": {
+    "0": "YES",
+    "1": "NO",
+    "2": "NEUTRAL"
+  },
+  "total_parameters": 137667
+}

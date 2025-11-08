@@ -1,0 +1,35 @@
+:root {
+  --color-light: #fff8f8;
+  --color-rose-light: #e9cbca;
+  --color-rose: #daa8a6;
+  --color-red-dark: #940000;
+  --color-red-darker: #580000;
+  --text-dark: #4A3A2E;
+  --text-darker: #2E2E2E;
+  font-size: 16px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Nunito", "Stack Sans Text", -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-light);
+  min-height: 100vh;
+  color: var(--text-darker);
+  font-size: 1rem;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+

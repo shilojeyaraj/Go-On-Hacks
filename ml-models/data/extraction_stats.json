@@ -1,0 +1,21 @@
+{
+  "extraction_time": "171.29 seconds",
+  "sequence_length": 15,
+  "categories": {
+    "yes": {
+      "videos": 19,
+      "sequences": 252,
+      "avg_face_detection_rate": "84.8%"
+    },
+    "no": {
+      "videos": 16,
+      "sequences": 200,
+      "avg_face_detection_rate": "98.2%"
+    },
+    "neutral": {
+      "videos": 4,
+      "sequences": 110,
+      "avg_face_detection_rate": "99.6%"
+    }
+  }
+}
