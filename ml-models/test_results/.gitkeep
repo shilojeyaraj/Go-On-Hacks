@@ -1,0 +1,35 @@
+# Test Results Directory
+
+This directory stores testing results from accuracy evaluation scripts.
+
+## Files Created
+
+- `accuracy_test_YYYYMMDD_HHMMSS.csv` - Individual accuracy tests
+- `team_test_YYYYMMDD_HHMMSS.csv` - Team testing sessions
+
+## CSV Format
+
+Each CSV contains:
+- Tester information
+- Expected gesture
+- Predicted gesture  
+- Confidence score
+- Whether prediction was correct
+- Timestamp
+- Response time
+
+## Analysis
+
+Use these files to:
+- Track model improvements over time
+- Identify problem areas
+- Find demographic bias
+- Generate reports
+- Share results with team
+
+## Git Note
+
+Test result CSV files are gitignored by default.
+Only this .gitkeep file is tracked to maintain directory structure.
+
+
