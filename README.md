@@ -2,24 +2,9 @@
 
 ToeGether is a modern dating application that helps users find their perfect match. The platform features Firebase authentication, user profile management, and a matching system designed to connect people based on their preferences.
 
-## Table of Contents
-
-- [Installation](#installation)
-  - [Prerequisites](#prerequisites)
-  - [Backend Setup](#backend-setup)
-  - [Frontend Setup](#frontend-setup)
-- [Firebase Configuration](#firebase-configuration)
-- [MongoDB Setup](#mongodb-setup)
-- [Usage](#usage)
-- [Features](#features)
-- [Contributing](#contributing)
-- [License](#license)
-
 ## Installation
 
 ### Prerequisites
-
-Before you begin, ensure you have the following installed:
 
 - Node.js 14+
 - npm or yarn
@@ -123,6 +108,64 @@ Before you begin, ensure you have the following installed:
 3. The `users` collection will be created automatically when users sign up
 4. Update `MONGODB_URI` in `backend/.env` with your connection string
 
+## ML Model Setup (Optional)
+
+The application includes an optional gesture recognition feature for hands-free swiping. To train or use the model:
+
+### Prerequisites
+
+- Python 3.8 or higher
+- Webcam (for testing)
+
+### Training the Model
+
+1. Navigate to the ml-models directory:
+
+   ```bash
+   cd ml-models
+   ```
+
+2. Install Python dependencies:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Collect training videos:
+
+   Place videos in the appropriate folders:
+   - `videos/yes/` - Videos of nodding YES (up-down movement)
+   - `videos/no/` - Videos of shaking NO (side-to-side movement)
+   - `videos/neutral/` - Videos of neutral/still faces
+
+   **Video Guidelines:**
+   - Format: .mp4, .avi, or .mov
+   - Duration: 3-10 seconds per video
+   - Quantity: Minimum 10 videos per category (recommended 30+)
+   - Quality: Clear face, good lighting, natural gestures
+
+4. Run the training pipeline:
+
+   ```bash
+   # Step 1: Organize and validate videos
+   python 1_upload_videos.py
+
+   # Step 2: Extract facial landmarks
+   python 2_extract_features.py
+
+   # Step 3: Train the model
+   python 3_train_model.py
+
+   # Step 4: Test with webcam
+   python 4_test_model.py
+   ```
+
+5. The trained model will be saved to `ml-models/models/gesture_classifier.h5`
+
+### Using the Model
+
+Once trained, the model can be used for gesture-based swiping in the application. The backend will automatically use the model if it exists in the `ml-models/models/` directory.
+
 ## Usage
 
 1. Start MongoDB if running locally
@@ -162,10 +205,9 @@ Before you begin, ensure you have the following installed:
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
 ## License
 
