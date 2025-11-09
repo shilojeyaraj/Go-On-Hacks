@@ -80,15 +80,13 @@
   font-family: inherit;
   flex: 1;
   min-width: 0;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .input:focus {
   outline: none;
   border-color: rgba(148, 0, 0, 0.4);
   background-color: white;
-  box-shadow: 0 0 0 0.1875rem rgba(148, 0, 0, 0.08);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .input:active {
