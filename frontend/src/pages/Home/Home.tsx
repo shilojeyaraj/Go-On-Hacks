@@ -77,16 +77,16 @@ export const Home: React.FC = () => {
 
           <div className="home-hero-content">
             <div className="home-hero-center">
-              <h1 className="home-logo">ToeGether</h1>
+          <h1 className="home-logo">ToeGether</h1>
               <p className="home-tagline">find someone who <span className="text-red">feets</span> you</p>
-              <Button 
-                onClick={() => navigate('/signup')} 
-                variant="primary"
-                className="home-cta-button"
-              >
+          <Button 
+            onClick={() => navigate('/signup')} 
+            variant="primary"
+            className="home-cta-button"
+          >
                 Create Account
-              </Button>
-            </div>
+          </Button>
+        </div>
           </div>
         </section>
 

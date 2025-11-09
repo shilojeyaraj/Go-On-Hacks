@@ -19,6 +19,7 @@ export const Swipe: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   
   // Drag/swipe state
+  const [swipeEnabled, setSwipeEnabled] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -106,7 +107,7 @@ export const Swipe: React.FC = () => {
 
   // Mouse drag handlers
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (swiping || swipeDirection) return;
+    if (!swipeEnabled || swiping || swipeDirection) return;
     setIsDragging(true);
     setDragStart({ x: e.clientX, y: e.clientY });
   };
@@ -134,13 +135,13 @@ export const Swipe: React.FC = () => {
 
   // Touch handlers
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (swiping || swipeDirection) return;
+    if (!swipeEnabled || swiping || swipeDirection) return;
     setIsDragging(true);
     setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || swiping || swipeDirection) return;
+    if (!swipeEnabled || !isDragging || swiping || swipeDirection) return;
     const deltaX = e.touches[0].clientX - dragStart.x;
     const deltaY = e.touches[0].clientY - dragStart.y;
     setDragOffset({ x: deltaX, y: deltaY });
@@ -149,6 +150,12 @@ export const Swipe: React.FC = () => {
   const handleTouchEnd = () => {
     if (!isDragging) return;
     setIsDragging(false);
+
+    // If swipe is disabled, just reset
+    if (!swipeEnabled) {
+      setDragOffset({ x: 0, y: 0 });
+      return;
+    }
 
     // If dragged far enough, trigger swipe
     if (Math.abs(dragOffset.x) > 150) {
@@ -161,9 +168,14 @@ export const Swipe: React.FC = () => {
 
   // Handle mouse move and up globally for better drag experience
   useEffect(() => {
-    if (!isDragging) return;
+    if (!isDragging || !swipeEnabled) return;
 
     const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (!swipeEnabled) {
+        setIsDragging(false);
+        setDragOffset({ x: 0, y: 0 });
+        return;
+      }
       const deltaX = e.clientX - dragStart.x;
       const deltaY = e.clientY - dragStart.y;
       setDragOffset({ x: deltaX, y: deltaY });
@@ -173,6 +185,9 @@ export const Swipe: React.FC = () => {
       setIsDragging(false);
       // Use a callback to get the latest dragOffset
       setDragOffset((currentOffset) => {
+        if (!swipeEnabled) {
+          return { x: 0, y: 0 };
+        }
         // If dragged far enough, trigger swipe
         if (Math.abs(currentOffset.x) > 150) {
           handleSwipe(currentOffset.x > 0 ? 'like' : 'pass');
@@ -191,7 +206,15 @@ export const Swipe: React.FC = () => {
       document.removeEventListener('mousemove', handleGlobalMouseMove);
       document.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [isDragging, dragStart, handleSwipe]);
+  }, [isDragging, dragStart, handleSwipe, swipeEnabled]);
+
+  // Stop dragging if swipeEnabled becomes false
+  useEffect(() => {
+    if (!swipeEnabled && isDragging) {
+      setIsDragging(false);
+      setDragOffset({ x: 0, y: 0 });
+    }
+  }, [swipeEnabled, isDragging]);
 
   const handleMatchModalClose = () => {
     setShowMatchModal(false);
@@ -295,16 +318,26 @@ export const Swipe: React.FC = () => {
     <>
       <Navigation />
       <div className="swipe-container">
+        {/* Swipe Enable Toggle Button */}
+        <div className="swipe-enable-control">
+          <button
+            type="button"
+            onClick={() => setSwipeEnabled(!swipeEnabled)}
+            className={`swipe-enable-toggle ${swipeEnabled ? 'swipe-enable-toggle--enabled' : ''}`}
+          >
+            {swipeEnabled ? 'Swiping Enabled' : 'Swiping Disabled'}
+          </button>
+        </div>
         <div className="swipe-card-wrapper">
           <div 
             ref={cardRef}
             className={`swipe-card ${swipeDirection ? `swipe-card--swipe-${swipeDirection}` : ''}`}
             style={{
-              transform: isDragging && !swipeDirection
+              transform: (isDragging && !swipeDirection && swipeEnabled)
                 ? `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${rotation}deg)`
                 : '',
               opacity: swipeDirection ? 1 : opacity,
-              cursor: isDragging ? 'grabbing' : 'grab',
+              cursor: swipeEnabled ? (isDragging ? 'grabbing' : 'grab') : 'default',
               userSelect: 'none',
             } as React.CSSProperties}
             onMouseDown={handleMouseDown}
