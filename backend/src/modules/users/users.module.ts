@@ -17,7 +17,7 @@ import { AuthUserSyncInterceptor } from '../../common/interceptors/auth-user-syn
   ],
   controllers: [UsersController],
   providers: [UsersService, AuthUserSyncInterceptor],
-  exports: [UsersService],
+  exports: [UsersService, AuthUserSyncInterceptor],
 })
 export class UsersModule {}
 
