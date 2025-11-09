@@ -43,6 +43,7 @@ export const Navigation: React.FC = () => {
               <Link
                 to="/profile"
                 className={`nav-link nav-link--profile ${location.pathname === '/profile' ? 'nav-link--active' : ''}`}
+                title="Profile"
               >
                 {user.photoURL ? (
                   <img src={user.photoURL} alt="Profile" className="nav-avatar" />
@@ -51,7 +52,6 @@ export const Navigation: React.FC = () => {
                     {user.displayName?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
                   </div>
                 )}
-                <span className="nav-profile-text">Your Profile</span>
               </Link>
               <button
                 onClick={handleLogout}

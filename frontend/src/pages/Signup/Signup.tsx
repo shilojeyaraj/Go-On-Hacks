@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthService } from '../../services/auth.service';
+import { UserSyncService } from '../../services/user-sync.service';
 import { Button } from '../../components/Button/Button';
 import { Input } from '../../components/Input/Input';
 import { Navigation } from '../../components/Navigation/Navigation';
@@ -32,7 +33,9 @@ export const Signup: React.FC = () => {
 
     try {
       await AuthService.signUp(email, password);
-      navigate('/profile'); // Redirect to profile page after signup
+      // Sync user to MongoDB after successful signup
+      await UserSyncService.syncUser();
+      navigate('/');
     } catch (err: any) {
       setError(err.message || 'Failed to sign up');
     } finally {
@@ -46,7 +49,9 @@ export const Signup: React.FC = () => {
 
     try {
       await AuthService.signInWithGoogle();
-      navigate('/profile'); // Redirect to profile page after signup
+      // Sync user to MongoDB after successful Google signup
+      await UserSyncService.syncUser();
+      navigate('/');
     } catch (err: any) {
       setError(err.message || 'Failed to sign up with Google');
     } finally {
