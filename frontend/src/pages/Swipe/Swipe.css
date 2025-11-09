@@ -4,26 +4,38 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1.5rem;
-  max-width: 600px;
+  padding: 1.5rem 1rem;
+  max-width: 520px;
   margin: 0 auto;
 }
 
 .swipe-card-wrapper {
   width: 100%;
-  max-width: 500px;
-  margin-bottom: 2rem;
+  max-width: 480px;
+  margin-bottom: 1.5rem;
 }
 
 .swipe-card {
   background: rgba(233, 203, 202, 0.4);
   border: 0.0625rem solid rgba(218, 168, 166, 0.3);
-  border-radius: 1rem;
+  border-radius: 0.875rem;
   overflow: hidden;
-  box-shadow: 0 0.125rem 0.5rem rgba(148, 0, 0, 0.1);
+  box-shadow: 0 0.25rem 0.75rem rgba(148, 0, 0, 0.12);
   transition: transform 0.2s ease-out, opacity 0.2s ease-out, background-color 0.15s ease;
   position: relative;
   touch-action: pan-y;
+}
+
+.swipe-card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  border-radius: 0.875rem;
+  transition: background-color 0.15s ease;
+  z-index: 1;
 }
 
 .swipe-card--swipe-left {
@@ -50,12 +62,14 @@
 
 .swipe-card-image-container {
   width: 100%;
-  height: 400px;
+  height: 260px;
   background: rgba(233, 203, 202, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  position: relative;
+  z-index: 2;
 }
 
 .swipe-card-image {
@@ -71,70 +85,80 @@
   align-items: center;
   justify-content: center;
   background: rgba(218, 168, 166, 0.3);
-  font-size: 6rem;
+  font-size: 4.5rem;
   font-weight: 700;
   color: var(--color-red-dark);
+  letter-spacing: -0.02em;
 }
 
 .swipe-card-info {
-  padding: 1.5rem;
+  padding: 1.25rem;
+  position: relative;
+  z-index: 2;
 }
 
 .swipe-card-name {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--color-red-dark);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.375rem;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 
 .swipe-card-age {
-  font-weight: 400;
+  font-weight: 500;
   color: var(--text-dark);
+  font-size: 1.5rem;
 }
 
 .swipe-card-bio {
-  font-size: 1rem;
+  font-size: 0.9375rem;
   color: var(--text-dark);
   line-height: 1.5;
-  margin-bottom: 1rem;
+  margin-bottom: 0.875rem;
+  font-weight: 400;
 }
 
 .swipe-card-section-title {
-  font-size: 1.125rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--color-red-dark);
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.625rem;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
 }
 
 .swipe-card-feet-preview {
-  margin-top: 1rem;
+  margin-top: 0.875rem;
 }
 
 .swipe-card-feet-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  gap: 0.4375rem;
+  margin-top: 0.4375rem;
 }
 
 .swipe-card-feet-image {
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  border-radius: 0.5rem;
+  border-radius: 0.4375rem;
   border: 0.0625rem solid rgba(218, 168, 166, 0.3);
 }
 
 .swipe-card-details {
-  margin-top: 1rem;
+  margin-top: 0.875rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4375rem;
 }
 
 .swipe-card-detail-item {
   display: flex;
   gap: 0.5rem;
+  font-size: 0.875rem;
 }
 
 .swipe-card-detail-label {
@@ -144,20 +168,21 @@
 
 .swipe-card-detail-value {
   color: var(--text-dark);
+  font-weight: 400;
 }
 
 .swipe-actions {
   display: flex;
-  gap: 1.5rem;
+  gap: 1rem;
   justify-content: center;
   width: 100%;
-  max-width: 500px;
+  max-width: 480px;
 }
 
 .swipe-action-btn {
   flex: 1;
-  padding: 1rem 2rem;
-  font-size: 1.125rem;
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
   font-weight: 600;
   border: none;
   border-radius: 0.5rem;
@@ -167,6 +192,7 @@
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
+  letter-spacing: 0.01em;
 }
 
 .swipe-action-btn:disabled {
@@ -269,20 +295,46 @@
 }
 
 @media (max-width: 768px) {
+  .swipe-container {
+    padding: 1rem 0.75rem;
+    max-width: 100%;
+  }
+
+  .swipe-card-wrapper {
+    max-width: 100%;
+  }
+
   .swipe-card-image-container {
-    height: 300px;
+    height: 240px;
+  }
+
+  .swipe-card-image-placeholder {
+    font-size: 4rem;
+  }
+
+  .swipe-card-info {
+    padding: 1rem;
   }
 
   .swipe-card-name {
-    font-size: 1.5rem;
+    font-size: 1.375rem;
+  }
+
+  .swipe-card-age {
+    font-size: 1.375rem;
+  }
+
+  .swipe-card-bio {
+    font-size: 0.875rem;
   }
 
   .swipe-actions {
-    gap: 1rem;
+    gap: 0.875rem;
+    max-width: 100%;
   }
 
   .swipe-action-btn {
-    padding: 0.875rem 1.5rem;
-    font-size: 1rem;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9375rem;
   }
 }

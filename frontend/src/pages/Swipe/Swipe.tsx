@@ -234,19 +234,20 @@ export const Swipe: React.FC = () => {
   
   // Calculate color tint based on drag direction
   const getCardBackground = () => {
-    if (!isDragging || swipeDirection) return 'transparent';
+    if (!isDragging || swipeDirection) return '';
     
     const dragAmount = Math.abs(dragOffset.x);
-    const intensity = Math.min(dragAmount / 150, 0.3); // Max 30% color intensity
     
     if (dragOffset.x > 0) {
-      // Dragging right - green tint for like
+      // Dragging right - green for like
+      const intensity = Math.min(dragAmount / 150, 0.6); // Max 60% intensity for green
       return `rgba(76, 175, 80, ${intensity})`;
     } else if (dragOffset.x < 0) {
-      // Dragging left - red tint for pass
+      // Dragging left - red for reject
+      const intensity = Math.min(dragAmount / 150, 0.6); // Max 60% intensity for red
       return `rgba(244, 67, 54, ${intensity})`;
     }
-    return 'transparent';
+    return '';
   };
 
   return (
@@ -262,10 +263,9 @@ export const Swipe: React.FC = () => {
                 ? `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${rotation}deg)`
                 : '',
               opacity: swipeDirection ? 1 : opacity,
-              backgroundColor: getCardBackground(),
               cursor: isDragging ? 'grabbing' : 'grab',
               userSelect: 'none',
-            }}
+            } as React.CSSProperties}
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
@@ -273,6 +273,15 @@ export const Swipe: React.FC = () => {
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
+            {/* Color overlay for swipe feedback */}
+            {isDragging && !swipeDirection && (
+              <div 
+                className="swipe-card-overlay"
+                style={{
+                  backgroundColor: getCardBackground(),
+                }}
+              />
+            )}
             {/* Profile Picture */}
             <div className="swipe-card-image-container">
               {currentProfile.profilePicture ? (

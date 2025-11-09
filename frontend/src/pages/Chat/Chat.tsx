@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Navigation } from '../../components/Navigation/Navigation';
 import { useAuthUser } from '../../hooks/useAuthUser';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { ChatService, ChatMatch, Message as ApiMessage } from '../../services/chat.service';
 import './Chat.css';
 
@@ -184,7 +184,10 @@ export const Chat: React.FC = () => {
                 </div>
               ) : matches.length === 0 ? (
                 <div className="chat-empty-state">
-                  <p className="chat-empty-text">no <span className="text-red">feets</span> for you lil bro</p>
+                  <p className="chat-empty-text">No matches yet. Keep swiping to find your match!</p>
+                  <p className="chat-empty-link">
+                    <Link to="/swipe" className="chat-empty-link-text">Go to swipe</Link>
+                  </p>
                 </div>
               ) : (
                 <div className="chat-list">

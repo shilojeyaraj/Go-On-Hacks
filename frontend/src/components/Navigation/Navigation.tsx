@@ -47,8 +47,8 @@ export const Navigation: React.FC = () => {
         {user && (
           <div className="nav-center-links">
               <Link
-                to="/match"
-              className={`nav-text-link ${location.pathname === '/match' ? 'nav-text-link--active' : ''}`}
+                to="/swipe"
+              className={`nav-text-link ${location.pathname === '/swipe' ? 'nav-text-link--active' : ''}`}
               >
                 Home
               </Link>

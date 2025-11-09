@@ -4,12 +4,14 @@ import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { Swipe, SwipeDocument } from './schemas/swipe.schema';
 import { UpdateProfileDto, UpdatePreferencesDto } from './dto/update-profile.dto';
+import { Conversation, ConversationDocument } from '../chat/schemas/conversation.schema';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Swipe.name) private swipeModel: Model<SwipeDocument>,
+    @InjectModel(Conversation.name) private conversationModel: Model<ConversationDocument>,
   ) {}
 
   async upsertFromFirebase(decoded: any): Promise<UserDocument> {
@@ -212,6 +214,33 @@ export class UsersService {
 
       if (mutualLike) {
         console.log(`[Match] Mutual match between ${swiperId} and ${swipedId}`);
+        
+        // Automatically create a conversation for the match
+        try {
+          const [participant1, participant2] = [swiperId, swipedId].sort();
+          
+          // Check if conversation already exists
+          let conversation = await this.conversationModel.findOne({
+            participant1,
+            participant2,
+          }).exec();
+
+          if (!conversation) {
+            conversation = await this.conversationModel.create({
+              participant1,
+              participant2,
+              unreadCounts: {
+                [participant1]: 0,
+                [participant2]: 0,
+              },
+            });
+            console.log(`[Match] Created conversation for match between ${participant1} and ${participant2}`);
+          }
+        } catch (error) {
+          console.error(`[Match] Failed to create conversation for match:`, error);
+          // Don't fail the swipe if conversation creation fails
+        }
+        
         return { isMatch: true, message: 'It\'s a match!' };
       }
     }
