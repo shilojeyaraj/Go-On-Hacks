@@ -48,7 +48,7 @@ export class GesturesService implements OnModuleInit {
     console.log('[BACKEND] Expected length:', this.sequenceLength);
 
     if (!sequence || sequence.length !== this.sequenceLength) {
-      console.error(`[BACKEND] ❌ Invalid sequence length. Expected ${this.sequenceLength}, got ${sequence?.length}`);
+      console.error(`[BACKEND] Invalid sequence length. Expected ${this.sequenceLength}, got ${sequence?.length}`);
       throw new Error(
         `Invalid sequence length. Expected ${this.sequenceLength}, got ${sequence?.length}`,
       );
@@ -58,13 +58,13 @@ export class GesturesService implements OnModuleInit {
     const featureCount = sequence[0]?.length;
     console.log('[BACKEND] Feature count per frame:', featureCount);
     if (featureCount !== 9) {
-      console.error(`[BACKEND] ❌ Invalid feature dimensions. Expected 9, got ${featureCount}`);
+      console.error(`[BACKEND] Invalid feature dimensions. Expected 9, got ${featureCount}`);
       throw new Error(
         `Invalid feature dimensions. Expected 9 features per frame, got ${featureCount}`,
       );
     }
 
-    console.log('[BACKEND] ✅ Validation passed, calling Python script...');
+    console.log('[BACKEND] Validation passed, calling Python script...');
     // Use Python script to run prediction
     // This is necessary because TensorFlow.js doesn't support H5 files directly
     return this.predictWithPython(sequence);
@@ -85,10 +85,10 @@ export class GesturesService implements OnModuleInit {
     console.log('[BACKEND] Python script path:', pythonScript);
     console.log('[BACKEND] Checking if script exists...');
     if (!fs.existsSync(pythonScript)) {
-      console.error('[BACKEND] ❌ Python script not found at:', pythonScript);
+      console.error('[BACKEND] Python script not found at:', pythonScript);
       throw new Error(`Python script not found at ${pythonScript}`);
     }
-    console.log('[BACKEND] ✅ Python script found');
+    console.log('[BACKEND] Python script found');
 
     const sequenceJson = JSON.stringify(sequence);
     console.log('[BACKEND] Spawning Python process...');
@@ -118,24 +118,24 @@ export class GesturesService implements OnModuleInit {
         console.log('[BACKEND] Python errors:', errorOutput);
 
         if (code !== 0) {
-          console.error('[BACKEND] ❌ Python script failed with code:', code);
+          console.error('[BACKEND] Python script failed with code:', code);
           reject(new Error(`Python script failed: ${errorOutput || 'Unknown error'}`));
           return;
         }
 
         try {
           const result = JSON.parse(output.trim());
-          console.log('[BACKEND] ✅ Parsed result:', result);
+          console.log('[BACKEND] Parsed result:', result);
           resolve(result);
         } catch (error: any) {
-          console.error('[BACKEND] ❌ Failed to parse JSON:', error.message);
+          console.error('[BACKEND] Failed to parse JSON:', error.message);
           console.error('[BACKEND] Raw output:', output);
           reject(new Error(`Failed to parse prediction result: ${error.message}. Output: ${output.substring(0, 200)}`));
         }
       });
 
       python.on('error', (error) => {
-        console.error('[BACKEND] ❌ Failed to spawn Python process:', error);
+        console.error('[BACKEND] Failed to spawn Python process:', error);
         reject(new Error(`Failed to spawn Python process: ${error.message}`));
       });
     });
