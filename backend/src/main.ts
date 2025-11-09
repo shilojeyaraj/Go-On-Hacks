@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import * as express from 'express';
+import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -52,6 +53,24 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     maxAge: 86400, // Cache preflight requests for 24 hours
+  });
+
+  // Serve static files from frontend build directory (for production)
+  // NestJS API routes will be handled first, then static files, then catch-all
+  const frontendBuildPath = join(__dirname, '../../frontend/build');
+  const expressApp = app.getHttpAdapter().getInstance();
+  
+  // Serve static files (CSS, JS, images, etc.)
+  expressApp.use(express.static(frontendBuildPath));
+  
+  // Catch-all handler: send back React's index.html file for client-side routing
+  // This handles all non-API routes and lets React Router handle routing
+  expressApp.get('*', (req, res, next) => {
+    // Skip API routes - let NestJS handle them (they should already be handled)
+    if (req.path.startsWith('/api/') || req.path.startsWith('/gestures/') || req.path.startsWith('/users/') || req.path.startsWith('/chat/') || req.path.startsWith('/subscriptions/')) {
+      return next(); // Let NestJS handle it
+    }
+    res.sendFile(join(frontendBuildPath, 'index.html'));
   });
 
   try {
