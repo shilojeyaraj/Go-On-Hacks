@@ -14,8 +14,12 @@
     "start": "npm run start:prod",
     "start:prod": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
     "start:backend": "cd backend && npm run start:prod",
-    "start:frontend": "cd frontend && npx serve -s build -l 3001",
+    "start:frontend": "cd frontend && npx serve -s build -l ${FRONTEND_PORT:-3001}",
     "prestart:prod": "npm run build"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2",
+    "serve": "^14.2.1"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
