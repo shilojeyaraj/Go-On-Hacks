@@ -10,13 +10,14 @@ type TabType = 'profile' | 'preferences';
 
 const ARCH_TYPES = ['High', 'Medium', 'Low', 'Flat'];
 const ARCH_SIZES = ['Small', 'Medium', 'Large', 'Extra Large'];
-const AGE_CATEGORIES = ['Googgoogaga', 'Underage', 'Middle Aged', 'Have Grandchildren'];
+const AGE_CATEGORIES = ['18-25', '26-35', '36-45', '46-55', '56-65', '65+'];
 const FAMILY_STATUSES = [
-  'Minor',
-  'Underage Mom',
   'Divorced Mom',
   'Divorced Dad',
-  'Engaged'
+  'Engaged',
+  'Single',
+  'Married',
+  'In a Relationship'
 ];
 
 const FOOT_FEEL_PREFERENCES = [

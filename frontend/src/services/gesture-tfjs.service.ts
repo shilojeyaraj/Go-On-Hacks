@@ -68,32 +68,45 @@ export class GestureTFJSService {
    * Predict gesture from sequence (runs in browser)
    */
   static async predictGesture(sequence: number[][]): Promise<GestureResult> {
+    console.log('[TFJS] Starting gesture prediction');
+    console.log('[TFJS] Model loaded:', this.model !== null);
+    
     // Ensure model is loaded
     if (!this.model) {
+      console.log('[TFJS] Model not loaded, attempting to load...');
       await this.loadModel();
     }
 
     if (!this.model) {
+      console.error('[TFJS] ❌ Model still not loaded after load attempt');
       throw new Error('Model not loaded. Please ensure the model files are available.');
     }
 
     // Validate input
     if (!sequence || sequence.length !== this.SEQUENCE_LENGTH) {
+      console.error('[TFJS] ❌ Invalid sequence length:', sequence?.length, 'expected:', this.SEQUENCE_LENGTH);
       throw new Error(`Invalid sequence length. Expected ${this.SEQUENCE_LENGTH}, got ${sequence?.length}`);
     }
 
     const featureCount = sequence[0]?.length;
     if (featureCount !== 9) {
+      console.error('[TFJS] ❌ Invalid feature dimensions:', featureCount, 'expected: 9');
       throw new Error(`Invalid feature dimensions. Expected 9, got ${featureCount}`);
     }
+
+    console.log('[TFJS] Input validated, creating tensor...');
+    console.log('[TFJS] Sample frame data:', sequence[0]?.slice(0, 3));
 
     try {
       // Convert to tensor: shape (1, 15, 9)
       const inputTensor = tf.tensor3d([sequence], [1, this.SEQUENCE_LENGTH, 9]);
+      console.log('[TFJS] Tensor created, shape:', inputTensor.shape);
 
       // Make prediction
+      console.log('[TFJS] Running model prediction...');
       const prediction = this.model.predict(inputTensor) as tf.Tensor;
       const probabilities = await prediction.data();
+      console.log('[TFJS] Raw probabilities:', Array.from(probabilities));
 
       // Clean up tensor
       inputTensor.dispose();
@@ -113,13 +126,17 @@ export class GestureTFJSService {
         NEUTRAL: probabilities[2],
       };
 
-      return {
+      const result = {
         gesture,
         confidence,
         probabilities: probabilitiesObj,
       };
+
+      console.log('[TFJS] ✅ Prediction complete:', result);
+      return result;
     } catch (error: any) {
-      console.error('[TFJS] Prediction error:', error);
+      console.error('[TFJS] ❌ Prediction error:', error);
+      console.error('[TFJS] Error stack:', error.stack);
       throw new Error(`Prediction failed: ${error.message}`);
     }
   }
