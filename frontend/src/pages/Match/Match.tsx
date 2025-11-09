@@ -45,10 +45,8 @@ export const Match: React.FC = () => {
     return (
       <>
         <Navigation />
-        <div className="container">
-          <div className="card card--medium card--centered">
-            <p className="text-body">Loading matches...</p>
-          </div>
+        <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 'calc(100vh - 4rem)' }}>
+          <p className="text-body">Loading...</p>
         </div>
       </>
     );
@@ -84,15 +82,16 @@ export const Match: React.FC = () => {
     <>
       <Navigation />
       <div className="match-container">
-        <div className="match-header">
-          <h1 className="text-title">Find Your Match</h1>
-          <p className="text-subtitle">Browse profiles of users with completed profiles</p>
-        </div>
-
         {matches.length === 0 ? (
-          <div className="card card--medium card--centered">
-            <p className="text-body text-center">No matches found yet. Check back later!</p>
-          </div>
+          <>
+            <div className="match-header">
+              <h1 className="text-title">Find Your Match</h1>
+              <p className="text-subtitle">Browse profiles of users with completed profiles</p>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <p className="text-body text-center">No matches found yet. Check back later!</p>
+            </div>
+          </>
         ) : (
           <div className="matches-grid">
             {matches.map((match) => (

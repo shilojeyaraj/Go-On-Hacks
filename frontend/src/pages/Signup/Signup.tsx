@@ -91,7 +91,6 @@ export const Signup: React.FC = () => {
             >
               Sign Up
             </button>
-            {loading && <p className="text-small text-center mt-small" style={{ color: 'var(--text-dark)' }}>Signing up...</p>}
           </form>
 
           <button
@@ -102,7 +101,6 @@ export const Signup: React.FC = () => {
           >
             Sign up with Google
           </button>
-          {loading && <p className="text-small text-center mt-small" style={{ color: 'var(--text-dark)' }}>Signing up...</p>}
 
           <p className="text-small text-center mt-large">
             Already have an account? <Link to="/login" className="auth-link">Sign in</Link>

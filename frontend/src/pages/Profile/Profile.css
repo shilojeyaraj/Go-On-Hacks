@@ -94,16 +94,6 @@
 .profile-tab-content--active {
   display: block;
   opacity: 1;
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
 }
 
 .profile-content .text-heading {
@@ -121,6 +111,14 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.profile-section--full-name {
+  max-width: 25rem;
+}
+
+.profile-section--feet-photos {
+  max-width: 30rem;
 }
 
 .profile-section-row {
@@ -248,13 +246,13 @@
   border: 0.1875rem solid rgba(218, 168, 166, 0.4);
   box-shadow: 0 0.25rem 0.75rem rgba(148, 0, 0, 0.15);
   transition: all 0.3s ease;
+  background: transparent;
 }
 
 .profile-picture-preview:hover,
 .profile-picture-placeholder:hover {
   border-color: rgba(148, 0, 0, 0.5);
   box-shadow: 0 0.5rem 1.5rem rgba(148, 0, 0, 0.25);
-  transform: scale(1.02);
 }
 
 .profile-picture-preview img,
@@ -346,7 +344,6 @@
 
 .feet-photo-btn:hover {
   background: white;
-  transform: scale(1.1);
 }
 
 .feet-photo-btn--remove {
@@ -416,7 +413,6 @@
 }
 
 .preference-chip:active {
-  transform: scale(0.98);
 }
 
 .preference-chip--active:active {
@@ -448,12 +444,10 @@
 
 .toggle-icon {
   font-size: 0.75rem;
-  transition: transform 0.25s ease;
   display: inline-block;
 }
 
 .toggle-icon--open {
-  transform: rotate(180deg);
 }
 
 .preferred-sizes-list {
@@ -496,11 +490,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease;
 }
 
 .preferred-size-remove:hover {
-  transform: scale(1.2);
 }
 
 .profile-save-btn {

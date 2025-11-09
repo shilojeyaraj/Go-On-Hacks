@@ -28,11 +28,13 @@
   color: var(--color-red-dark);
   text-decoration: none;
   letter-spacing: -0.02em;
-  margin-left: -1rem;
+  margin-left: -2.5rem;
+  justify-self: start;
 }
 
 .nav-right {
-  margin-right: -1rem;
+  margin-right: -2.5rem;
+  justify-self: end;
 }
 
 .nav-logo:hover {
@@ -54,6 +56,8 @@
   gap: 2rem;
   align-items: center;
   justify-content: center;
+  justify-self: center;
+  width: 100%;
 }
 
 .nav-right {
@@ -90,28 +94,16 @@
   text-decoration: none;
   font-weight: 600;
   font-size: 1rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .nav-link:hover {
   color: var(--color-red-dark);
-  background: rgba(148, 0, 0, 0.08);
-}
-
-.nav-link:active {
-  transition: none;
 }
 
 .nav-link--active {
   color: var(--color-red-dark);
   font-weight: 700;
-  background: rgba(148, 0, 0, 0.1);
 }
 
 .nav-link--profile {
@@ -119,10 +111,12 @@
   align-items: center;
   gap: 0;
   padding: 0;
+  background: none;
+  border: none;
 }
 
 .nav-link--profile:hover {
-  color: var(--color-red-dark);
+  color: inherit;
 }
 
 .nav-profile-dropdown {
@@ -145,7 +139,7 @@
   border-radius: 50%;
   object-fit: cover;
   border: 0.1875rem solid var(--color-red-dark);
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease;
   flex-shrink: 0;
   box-shadow: 0 0.125rem 0.5rem rgba(148, 0, 0, 0.2);
   cursor: pointer;
@@ -153,12 +147,6 @@
 
 .nav-link--profile:hover .nav-avatar {
   border-color: var(--color-red-darker);
-  box-shadow: 0 0.25rem 0.75rem rgba(148, 0, 0, 0.3);
-}
-
-.nav-link--profile:active .nav-avatar,
-.nav-link--profile:active .nav-avatar--placeholder {
-  transition: none;
 }
 
 .nav-avatar--placeholder {
@@ -170,7 +158,7 @@
   font-weight: 700;
   font-size: 1.125rem;
   border: 0.1875rem solid var(--color-red-dark);
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease;
   flex-shrink: 0;
   box-shadow: 0 0.125rem 0.5rem rgba(148, 0, 0, 0.2);
   cursor: pointer;
@@ -178,12 +166,10 @@
 
 .nav-link--profile:hover .nav-avatar--placeholder {
   border-color: var(--color-red-darker);
-  box-shadow: 0 0.25rem 0.75rem rgba(148, 0, 0, 0.3);
 }
 
 .nav-link--profile.nav-link--active .nav-avatar {
   border-color: var(--color-red-darker);
-  box-shadow: 0 0.25rem 0.75rem rgba(148, 0, 0, 0.3);
 }
 
 .nav-dropdown-menu {
@@ -197,7 +183,6 @@
   min-width: 10rem;
   overflow: hidden;
   z-index: 1000;
-  animation: fadeIn 0.2s ease-in-out;
 }
 
 .nav-dropdown-item {
@@ -230,16 +215,6 @@
   background: rgba(148, 0, 0, 0.1);
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-0.5rem);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
 @media (max-width: 48rem) {
   .nav-container {

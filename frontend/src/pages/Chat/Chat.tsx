@@ -180,7 +180,7 @@ export const Chat: React.FC = () => {
             <div className="chat-sidebar-content">
               {loading ? (
                 <div className="chat-empty-state">
-                  <p className="chat-empty-text">Loading conversations...</p>
+                  <p className="chat-empty-text">Loading...</p>
                 </div>
               ) : matches.length === 0 ? (
                 <div className="chat-empty-state">

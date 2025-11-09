@@ -292,7 +292,7 @@ export const Profile: React.FC = () => {
         <Navigation />
         <div className="container">
           <div className="card card--medium card--centered">
-            <p className="text-body">Loading profile...</p>
+            <p className="text-body">Loading...</p>
           </div>
         </div>
       </>
@@ -310,13 +310,13 @@ export const Profile: React.FC = () => {
     <>
       <Navigation />
       <div className="profile-container">
-        {!isProfileComplete && (
-          <div className="profile-completion-banner">
-            <p className="profile-completion-text">
-              Complete your profile to start matching! ({Math.round(profileCompletionStatus)}%)
-            </p>
-          </div>
-        )}
+          {!isProfileComplete && (
+            <div className="profile-completion-banner">
+              <p className="profile-completion-text">
+                Complete your profile to start matching! ({Math.round(profileCompletionStatus)}%)
+              </p>
+            </div>
+          )}
 
         <div className="profile-tabs">
           <button
@@ -389,7 +389,7 @@ export const Profile: React.FC = () => {
                 </div>
               </div>
 
-              <div className="profile-section">
+              <div className="profile-section profile-section--feet-photos">
                 <h3 className="text-subheading">Feet Photos</h3>
                 <p className="text-small" style={{ marginBottom: '0.75rem' }}>Upload at least 1 photo of your feet</p>
                 <div className="feet-photos-grid">
@@ -442,7 +442,7 @@ export const Profile: React.FC = () => {
                 </Button>
               </div>
 
-              <div className="profile-section">
+              <div className="profile-section profile-section--full-name">
                 <h3 className="text-subheading">Full Name</h3>
                 <Input
                   type="text"
@@ -511,8 +511,8 @@ export const Profile: React.FC = () => {
                             name="archSize"
                             value={size}
                             checked={archSize === size}
-                            onChange={(e) => setArchSize(e.target.value)}
-                          />
+                      onChange={(e) => setArchSize(e.target.value)}
+                    />
                           <span className="radio-label">{size}</span>
                         </label>
                       ))}
@@ -535,7 +535,7 @@ export const Profile: React.FC = () => {
                             value={category}
                             checked={ageCategory === category}
                             onChange={(e) => setAgeCategory(e.target.value)}
-                          />
+                    />
                           <span className="radio-label">{category}</span>
                         </label>
                       ))}
@@ -597,20 +597,20 @@ export const Profile: React.FC = () => {
                     </button>
                   ))}
                 </div>
-              </div>
+                  </div>
 
               <div className="profile-section">
-                <button
+                        <button
                   type="button"
                   className="additional-preferences-toggle"
                   onClick={() => setShowAdditionalPreferences(!showAdditionalPreferences)}
-                >
+                        >
                   <span>Additional Preferences</span>
                   <span className={`toggle-icon ${showAdditionalPreferences ? 'toggle-icon--open' : ''}`}>
                     ▼
                   </span>
-                </button>
-              </div>
+                        </button>
+                      </div>
 
               {showAdditionalPreferences && (
                 <>
@@ -694,8 +694,8 @@ export const Profile: React.FC = () => {
                     >
                       {pref}
                     </button>
-                  ))}
-                </div>
+                    ))}
+                  </div>
               </div>
 
               <div className="profile-section">

@@ -10,9 +10,17 @@
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
   font-family: inherit;
   margin-top: 0.5rem;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
 }
 
 .auth-submit-btn:hover:not(:disabled),
@@ -21,12 +29,11 @@
   padding: 0.875rem 1.5rem;
   background-color: var(--color-red-dark);
   color: white;
-  border: none;
+  border: 0.125rem solid transparent;
   border-radius: 0.75rem;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
   font-family: inherit;
   margin-top: 0.5rem;
 }
@@ -41,7 +48,15 @@
   color: var(--color-red-dark);
   text-decoration: none;
   font-weight: 600;
-  transition: color 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
 }
 
 .auth-link:hover {

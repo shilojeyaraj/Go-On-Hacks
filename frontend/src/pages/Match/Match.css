@@ -7,6 +7,9 @@
 .match-header {
   margin-bottom: 2rem;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .matches-grid {
@@ -20,12 +23,11 @@
   flex-direction: column;
   align-items: center;
   padding: 1.5rem;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition: box-shadow 0.2s ease;
   cursor: pointer;
 }
 
 .match-card:hover {
-  transform: translateY(-0.25rem);
   box-shadow: 0 0.5rem 1.5rem rgba(148, 0, 0, 0.15);
 }
 

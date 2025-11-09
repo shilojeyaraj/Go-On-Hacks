@@ -79,27 +79,30 @@
 }
 
 .home-logo {
-  font-size: 4.5rem;
+  font-size: 5rem;
   font-weight: 900;
   color: var(--color-red-dark);
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
   letter-spacing: -0.03em;
   line-height: 1.1;
+  text-shadow: 0 0.125rem 0.25rem rgba(148, 0, 0, 0.2);
 }
 
 .home-tagline {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   color: var(--text-darker);
-  margin-bottom: 0.5rem;
+  margin-bottom: 2rem;
   font-weight: 600;
+  line-height: 1.5;
+  text-shadow: 0 0.0625rem 0.125rem rgba(255, 255, 255, 0.8);
 }
 
 .home-cta-button {
-  margin-top: 2.5rem;
+  margin-top: 2rem;
   width: auto;
-  min-width: 12rem;
-  font-size: 1.125rem;
-  padding: 1rem 2.5rem;
+  min-width: 5.5rem;
+  font-size: 0.75rem;
+  padding: 0.5rem 1rem;
   font-weight: 700;
 }
 
@@ -200,11 +203,11 @@
   }
 
   .home-logo {
-    font-size: 3rem;
+    font-size: 3.5rem;
   }
 
   .home-tagline {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
   }
 
   .home-collage-background {
@@ -221,9 +224,9 @@
 
   .home-cta-button {
     width: auto;
-    min-width: 10rem;
-    font-size: 1rem;
-    padding: 0.875rem 2rem;
+    min-width: 9rem;
+    font-size: 0.9375rem;
+    padding: 0.75rem 1.75rem;
   }
 
   .home-benefits {
@@ -275,11 +278,11 @@
 
 @media (max-width: 30rem) {
   .home-logo {
-    font-size: 2.5rem;
+    font-size: 3rem;
   }
 
   .home-tagline {
-    font-size: 1.1rem;
+    font-size: 1.25rem;
   }
 
   .home-collage-background {
@@ -296,9 +299,9 @@
 
   .home-cta-button {
     width: auto;
-    min-width: 10rem;
-    font-size: 1rem;
-    padding: 0.875rem 2rem;
+    min-width: 9rem;
+    font-size: 0.9375rem;
+    padding: 0.75rem 1.75rem;
   }
 
   .home-benefits-title {
