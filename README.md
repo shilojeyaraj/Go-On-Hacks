@@ -172,23 +172,40 @@ Once trained, the model can be used for gesture-based swiping in the application
 
 7. Browse matches, chat with connections, and manage your profile
 
-## Features
+## Testing Multiple Accounts Locally
 
-- Email/Password Authentication
-- Google Sign-In
-- User Profile Management
-- Password Reset
-- Protected Routes
-- User Data Synchronization with MongoDB
-- Responsive Design
+To test the application with multiple users simultaneously (e.g., for testing swiping and matching):
 
-## Contributing
+1. Start the backend server (Terminal 1):
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+   ```bash
+   cd backend
+   npm run start:dev
+   ```
 
-## License
+2. Start the first frontend instance (Terminal 2):
 
-This project is licensed under the MIT License.
+   ```powershell
+   cd frontend
+   $env:PORT=3001; npm start
+   ```
+
+3. Start the second frontend instance (Terminal 3):
+
+   ```powershell
+   cd frontend
+   $env:PORT=3002; npm start
+   ```
+
+4. Open two browser windows:
+   - First user: http://localhost:3001
+   - Second user: http://localhost:3002
+
+5. Sign up/log in with different accounts in each window
+
+6. Both instances will connect to the same backend, allowing you to test:
+   - Swiping between users
+   - Matching functionality
+   - Real-time chat between matched users
+
+**Note:** The backend CORS configuration automatically allows requests from any localhost port for development.
