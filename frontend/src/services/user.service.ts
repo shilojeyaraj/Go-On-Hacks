@@ -12,9 +12,16 @@ export interface UserProfile {
   archType?: string;
   archSize?: string;
   age?: number;
+  ageCategory?: string;
   familyStatus?: string;
   preferredArchTypes?: string[];
   preferredArchSizes?: string[];
+  footFeelPreferences?: string[];
+  aestheticPreferences?: string[];
+  toeActivityPreferences?: string[];
+  footPersonalityPreferences?: string[];
+  careRoutinePreferences?: string[];
+  personalNote?: string;
   profileCompleted?: boolean;
 }
 
@@ -29,9 +36,16 @@ export interface UpdatePreferencesData {
   archType?: string;
   archSize?: string;
   age?: number;
+  ageCategory?: string;
   familyStatus?: string;
   preferredArchTypes?: string[];
   preferredArchSizes?: string[];
+  footFeelPreferences?: string[];
+  aestheticPreferences?: string[];
+  toeActivityPreferences?: string[];
+  footPersonalityPreferences?: string[];
+  careRoutinePreferences?: string[];
+  personalNote?: string;
 }
 
 export class UserService {
@@ -67,5 +81,11 @@ export class UserService {
     });
   }
 }
+
+
+
+
+
+
 
 
