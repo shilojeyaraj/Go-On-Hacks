@@ -3,7 +3,6 @@ import { Navigation } from '../../components/Navigation/Navigation';
 import { UserService, UserProfile } from '../../services/user.service';
 import { ChatService } from '../../services/chat.service';
 import { GestureService } from '../../services/gesture.service';
-import { GestureTFJSService } from '../../services/gesture-tfjs.service';
 import { useAuthUser } from '../../hooks/useAuthUser';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '../../components/Button/Button';
@@ -14,6 +13,7 @@ declare global {
   interface Window {
     FaceMesh: any;
     Camera: any;
+    onResults: any;
   }
 }
 
@@ -38,8 +38,8 @@ export const Swipe: React.FC = () => {
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Gesture recognition state
-  const [gestureEnabled, setGestureEnabled] = useState(false);
+  // Gesture recognition state - ALWAYS ENABLED
+  const [gestureEnabled] = useState(true); // Always enabled, independent of swipeEnabled
   const [gestureStatus, setGestureStatus] = useState<string>('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -49,6 +49,7 @@ export const Swipe: React.FC = () => {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const lastPredictionTime = useRef<number>(0);
   const gestureCooldownRef = useRef<boolean>(false);
+  const cameraStartedRef = useRef<boolean>(false);
 
   const SEQUENCE_LENGTH = 15;
   const PREDICTION_INTERVAL = 500; // Predict every 500ms
@@ -58,10 +59,11 @@ export const Swipe: React.FC = () => {
     checkProfileAndLoadProfiles();
     checkSwipeLimit();
     
-    // Try to load TensorFlow.js model for browser-based predictions (no Python dependency)
-    GestureTFJSService.loadModel().catch((err) => {
-      console.log('[Swipe] TFJS model not available, will use backend fallback:', err.message);
-    });
+    // Using backend Python prediction with gesture_classifier.h5 model
+    console.log('[Swipe] Using backend prediction with gesture_classifier.h5 model');
+    
+    // Skip TensorFlow.js loading - we're using backend H5 model exclusively
+    // This prevents unnecessary error messages in console
   }, [user]);
 
   // Extract features from face landmarks (matching training: 9 features per frame)
@@ -108,9 +110,12 @@ export const Swipe: React.FC = () => {
 
   // Process face landmarks and build sequence
   const processFaceLandmarks = useCallback((landmarks: any[]) => {
+    if (!landmarks || !Array.isArray(landmarks) || landmarks.length === 0) {
+      return;
+    }
+    
     const features = extractFeatures(landmarks);
-    if (!features) {
-      console.log('[Swipe] ⚠️ Failed to extract features from landmarks');
+    if (!features || !Array.isArray(features) || features.length !== 9) {
       return;
     }
 
@@ -122,10 +127,17 @@ export const Swipe: React.FC = () => {
     if (frameBufferRef.current.length > SEQUENCE_LENGTH) {
       frameBufferRef.current.shift();
     }
+
+    // Log buffer status less frequently (every 10 frames)
+    if (frameBufferRef.current.length === 5 || frameBufferRef.current.length === 10 || frameBufferRef.current.length === SEQUENCE_LENGTH) {
+      console.log(`[Swipe] Frame buffer: ${frameBufferRef.current.length}/${SEQUENCE_LENGTH} frames`);
+    }
   }, [extractFeatures]);
 
   // Load MediaPipe Face Mesh
   useEffect(() => {
+    let isMounted = true;
+    
     const loadMediaPipeFromCDN = () => {
       // Check if already loaded
       if ((window as any).FaceMesh) {
@@ -133,50 +145,70 @@ export const Swipe: React.FC = () => {
         return;
       }
 
-      // Load from CDN
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js';
-      script.onload = () => {
-        const faceScript = document.createElement('script');
-        faceScript.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js';
-        faceScript.onload = () => {
-          initializeFaceMesh();
-        };
-        document.head.appendChild(faceScript);
+      // Load MediaPipe Face Mesh first
+      const faceScript = document.createElement('script');
+      faceScript.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js';
+      faceScript.onerror = () => {
+        console.error('[Swipe] Failed to load MediaPipe Face Mesh');
+        if (isMounted) {
+          setGestureStatus('Face detection unavailable - Using backend only');
+        }
       };
-      document.head.appendChild(script);
+      faceScript.onload = () => {
+        // Wait a bit longer for MediaPipe to fully initialize
+        setTimeout(() => {
+          if (isMounted) {
+            initializeFaceMesh();
+          }
+        }, 300);
+      };
+      document.head.appendChild(faceScript);
     };
 
     const initializeFaceMesh = () => {
       if ((window as any).FaceMesh) {
-        const faceMesh = new (window as any).FaceMesh({
-          locateFile: (file: string) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
-          },
-        });
+        try {
+          // Use a more compatible initialization approach
+          const FaceMeshClass = (window as any).FaceMesh;
+          const faceMesh = new FaceMeshClass({
+            locateFile: (file: string) => {
+              return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+            },
+          });
 
-        faceMesh.setOptions({
-          maxNumFaces: 1,
-          refineLandmarks: true,
-          minDetectionConfidence: 0.5,
-          minTrackingConfidence: 0.5,
-        });
+          faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true,
+            minDetectionConfidence: 0.1, // Extremely low threshold - almost always detect
+            minTrackingConfidence: 0.1, // Extremely low threshold - almost always track
+          });
+          console.log('[Swipe] MediaPipe Face Mesh configured - detection threshold: 0.1 (very low)');
 
         faceMesh.onResults((results: any) => {
           if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-            console.log('[Swipe] 👤 Face detected, processing landmarks...');
             processFaceLandmarks(results.multiFaceLandmarks[0].landmark);
-          } else {
-            console.log('[Swipe] ⚠️ No face detected in frame');
           }
         });
 
-        faceMeshRef.current = faceMesh;
-        console.log('[Swipe] MediaPipe Face Mesh loaded from CDN');
+          faceMeshRef.current = faceMesh;
+          console.log('[Swipe] MediaPipe Face Mesh loaded from CDN');
+          if (isMounted) {
+            setGestureStatus('Camera active - Show your face');
+          }
+        } catch (error: any) {
+          console.error('[Swipe] Failed to initialize MediaPipe:', error);
+          if (isMounted) {
+            setGestureStatus('Face detection unavailable - Using backend only');
+          }
+        }
       }
     };
 
     loadMediaPipeFromCDN();
+
+    return () => {
+      isMounted = false;
+    };
   }, [processFaceLandmarks]);
 
   const handleSwipe = useCallback(async (action: 'like' | 'pass') => {
@@ -252,54 +284,25 @@ export const Swipe: React.FC = () => {
       const sequence = [...frameBufferRef.current];
       console.log('[Swipe] 📊 Sequence ready, starting prediction. Sample frame:', sequence[0]?.slice(0, 3));
       
-      // Try TensorFlow.js first (browser-based, faster, no backend dependency)
-      let result;
-      const tfjsLoaded = GestureTFJSService.isModelLoaded();
-      console.log('[Swipe] TFJS model loaded:', tfjsLoaded);
-      
-      try {
-        if (tfjsLoaded) {
-          console.log('[Swipe] 🚀 Using TFJS for prediction...');
-          result = await GestureTFJSService.predictGesture(sequence);
-          console.log('[Swipe] ✅ Gesture detected (TFJS):', result.gesture, 'confidence:', result.confidence);
-        } else {
-          // Fallback to backend Python prediction
-          console.log('[Swipe] 🔄 TFJS not loaded, using backend...');
-          const backendResult = await GestureService.predictGesture(sequence);
-          result = {
-            gesture: backendResult.gesture as 'YES' | 'NO' | 'NEUTRAL',
-            confidence: backendResult.confidence,
-            probabilities: backendResult.probabilities,
-          };
-          console.log('[Swipe] ✅ Gesture detected (Backend):', result.gesture, 'confidence:', result.confidence);
-        }
-      } catch (tfjsError: any) {
-        // If TFJS fails, fallback to backend
-        console.error('[Swipe] ❌ TFJS prediction failed:', tfjsError.message);
-        console.log('[Swipe] 🔄 Falling back to backend...');
-        const backendResult = await GestureService.predictGesture(sequence);
-        result = {
-          gesture: backendResult.gesture as 'YES' | 'NO' | 'NEUTRAL',
-          confidence: backendResult.confidence,
-          probabilities: backendResult.probabilities,
-        };
-        console.log('[Swipe] ✅ Gesture detected (Backend fallback):', result.gesture, 'confidence:', result.confidence);
-      }
-
-      console.log('[Swipe] 📈 Prediction result:', {
-        gesture: result.gesture,
-        confidence: result.confidence,
-        probabilities: result.probabilities,
-        threshold: 0.7,
-        meetsThreshold: result.confidence > 0.7,
-      });
+      // Use backend Python prediction with gesture_classifier.h5 model
+      const backendResult = await GestureService.predictGesture(sequence);
+      const result = {
+        gesture: backendResult.gesture as 'YES' | 'NO' | 'NEUTRAL',
+        confidence: backendResult.confidence,
+        probabilities: backendResult.probabilities,
+      };
 
       // Only act on high confidence predictions
+      // Gestures work independently of swipeEnabled state
       if (result.confidence > 0.7) {
         console.log('[Swipe] ✅ High confidence gesture detected:', result.gesture);
         if (result.gesture === 'YES' && !swiping && !swipeDirection) {
-          // Nod + lick up = YES → swipe right (like)
-          console.log('[Swipe] 👍 Executing LIKE swipe from YES gesture');
+          // Nod = YES → swipe right (like)
+          console.log('========================================');
+          console.log('[Swipe] YES GESTURE DETECTED - LIKING PROFILE');
+          console.log(`Confidence: ${result.confidence.toFixed(3)}`);
+          console.log(`Probabilities - YES: ${result.probabilities.YES.toFixed(3)}, NO: ${result.probabilities.NO.toFixed(3)}, NEUTRAL: ${result.probabilities.NEUTRAL.toFixed(3)}`);
+          console.log('========================================');
           setGestureStatus('✓ Liked!');
           gestureCooldownRef.current = true;
           setTimeout(() => {
@@ -310,7 +313,11 @@ export const Swipe: React.FC = () => {
           handleSwipe('like');
         } else if (result.gesture === 'NO' && !swiping && !swipeDirection) {
           // Shake head = NO → swipe left (pass)
-          console.log('[Swipe] 👎 Executing PASS swipe from NO gesture');
+          console.log('========================================');
+          console.log('[Swipe] NO GESTURE DETECTED - PASSING PROFILE');
+          console.log(`Confidence: ${result.confidence.toFixed(3)}`);
+          console.log(`Probabilities - YES: ${result.probabilities.YES.toFixed(3)}, NO: ${result.probabilities.NO.toFixed(3)}, NEUTRAL: ${result.probabilities.NEUTRAL.toFixed(3)}`);
+          console.log('========================================');
           setGestureStatus('✕ Passed!');
           gestureCooldownRef.current = true;
           setTimeout(() => {
@@ -319,15 +326,17 @@ export const Swipe: React.FC = () => {
             console.log('[Swipe] ⏰ Gesture cooldown expired');
           }, GESTURE_COOLDOWN);
           handleSwipe('pass');
-        } else {
-          console.log('[Swipe] ⚠️ Gesture detected but conditions not met:', {
-            gesture: result.gesture,
-            swiping,
-            swipeDirection,
-          });
+        } else if (result.gesture === 'NEUTRAL') {
+          // Log NEUTRAL less frequently (only every 5th time)
+          if (Math.random() < 0.2) {
+            console.log('[Swipe] NEUTRAL gesture detected - No action');
+          }
         }
       } else {
-        console.log('[Swipe] ⚠️ Low confidence gesture ignored:', result.gesture, 'confidence:', result.confidence);
+        // Log low confidence predictions less frequently
+        if (Math.random() < 0.1) {
+          console.log(`[Swipe] Low confidence prediction (${result.confidence.toFixed(3)}) - Ignoring`);
+        }
       }
     } catch (err: any) {
       console.error('[Swipe] ❌ Gesture prediction error:', err);
@@ -378,38 +387,35 @@ export const Swipe: React.FC = () => {
         return;
       }
 
-      frameCount++;
-      if (frameCount % 30 === 0) {
-        console.log('[Swipe] 📹 Processing frame', frameCount, 'Buffer:', frameBufferRef.current.length);
-      }
-
       // Draw video frame to canvas
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      }
+      // Ensure canvas has valid dimensions
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        // Only set canvas dimensions if they changed (more efficient)
+        if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+        }
+        
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        }
 
-      // Process with MediaPipe
-      if (faceMeshRef.current) {
-        try {
+        // Process with MediaPipe
+        if (faceMeshRef.current) {
           await faceMeshRef.current.send({ image: canvas });
-        } catch (error: any) {
-          console.error('[Swipe] ❌ MediaPipe processing error:', error);
         }
       }
 
       // Check if we have enough frames and enough time has passed
       const now = Date.now();
-      const timeSinceLastPrediction = now - lastPredictionTime.current;
-      const bufferReady = frameBufferRef.current.length === SEQUENCE_LENGTH;
-      const intervalPassed = timeSinceLastPrediction >= PREDICTION_INTERVAL;
-      const notInCooldown = !gestureCooldownRef.current;
-
-      if (bufferReady && intervalPassed && notInCooldown) {
-        console.log('[Swipe] ⏰ Prediction interval reached, triggering prediction');
+      const bufferLength = frameBufferRef.current.length;
+      
+      if (bufferLength === SEQUENCE_LENGTH && now - lastPredictionTime.current >= PREDICTION_INTERVAL && !gestureCooldownRef.current) {
         lastPredictionTime.current = now;
         predictGesture();
+      } else if (bufferLength < SEQUENCE_LENGTH && bufferLength === 10) {
+        // Only log once when buffer reaches 10 frames
+        console.log(`[Swipe] Building frame buffer: ${bufferLength}/${SEQUENCE_LENGTH} frames`);
       }
 
       animationFrameRef.current = requestAnimationFrame(processFrame);
@@ -419,12 +425,12 @@ export const Swipe: React.FC = () => {
     processFrame();
   }, [predictGesture]);
 
-  // Initialize camera when gesture recognition is enabled
+  // Initialize camera - ALWAYS ENABLED (independent of swipeEnabled)
   useEffect(() => {
-    if (!gestureEnabled || !faceMeshRef.current) return;
+    let cameraTimer: NodeJS.Timeout | null = null;
+    let isInitializing = false;
 
     const startCamera = async () => {
-      console.log('[Swipe] 📷 Requesting camera access...');
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'user', width: 640, height: 480 },
@@ -432,29 +438,37 @@ export const Swipe: React.FC = () => {
 
         console.log('[Swipe] ✅ Camera access granted');
         if (videoRef.current) {
+          // Clear any existing srcObject first
+          if (videoRef.current.srcObject) {
+            const oldStream = videoRef.current.srcObject as MediaStream;
+            oldStream.getTracks().forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+            // Wait a bit for cleanup
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+
+          // Set new stream
           videoRef.current.srcObject = stream;
-          await videoRef.current.play();
           mediaStreamRef.current = stream;
-          console.log('[Swipe] ✅ Video element playing, starting detection');
           setGestureStatus('Camera active - Show your face');
           startGestureDetection();
-        } else {
-          console.error('[Swipe] ❌ Video ref not available');
         }
-      } catch (err: any) {
-        console.error('[Swipe] ❌ Failed to access camera:', err);
-        console.error('[Swipe] Error details:', err.message, err.name);
+      } catch (err) {
+        console.error('Failed to access camera:', err);
         setGestureStatus('Camera access denied');
-        setGestureEnabled(false);
       }
     };
 
-    startCamera();
+    // Start camera after MediaPipe is loaded
+    cameraTimer = setTimeout(startCamera, 500);
 
     return () => {
+      if (cameraTimer) clearTimeout(cameraTimer);
       stopCamera();
+      isInitializing = false;
+      cameraStartedRef.current = false;
     };
-  }, [gestureEnabled, startGestureDetection, stopCamera]);
+  }, [startGestureDetection, stopCamera]);
 
   // Handle mouse move globally for better drag experience
   useEffect(() => {
@@ -473,15 +487,8 @@ export const Swipe: React.FC = () => {
     };
   }, [isDragging, dragStart]);
 
-  // Toggle gesture recognition
-  const toggleGestureRecognition = useCallback(() => {
-    if (gestureEnabled) {
-      stopCamera();
-      setGestureEnabled(false);
-    } else {
-      setGestureEnabled(true);
-    }
-  }, [gestureEnabled, stopCamera]);
+  // Gesture recognition is always enabled - no toggle needed
+  // Removed toggleGestureRecognition function since gestures are always on
 
   const checkSwipeLimit = async () => {
     if (!user?.uid) return;
@@ -826,68 +833,59 @@ export const Swipe: React.FC = () => {
           </div>
         </div>
 
-        {/* Swipe Limit Display */}
-        {swipeLimit && !swipeLimit.isPremium && (
-          <div className="swipe-limit-display">
-            <p className="swipe-limit-text">
-              {swipeLimit.remainingSwipes > 0 ? (
-                <>
-                  <strong>{swipeLimit.remainingSwipes}</strong> swipes remaining today
-                </>
-              ) : (
-                <>
-                  Daily limit reached. <Link to="/pricing" className="swipe-limit-link">Upgrade to Premium</Link> for unlimited swipes!
-                </>
-              )}
-            </p>
-          </div>
-        )}
 
-        {/* Gesture Recognition Controls */}
+        {/* Gesture Recognition Status - Always Enabled */}
         <div className="swipe-gesture-controls">
-          <button
-            className={`swipe-gesture-toggle ${gestureEnabled ? 'swipe-gesture-toggle--active' : ''}`}
-            onClick={toggleGestureRecognition}
-            disabled={swiping}
-          >
-            {gestureEnabled ? '📹 Stop Gestures' : '📷 Use Gestures'}
-          </button>
+          <div className="swipe-gesture-status-indicator">
+            <span className="swipe-gesture-status-text">Gestures Active</span>
+          </div>
           {gestureStatus && (
             <div className="swipe-gesture-status">{gestureStatus}</div>
           )}
         </div>
 
-        {/* Hidden video and canvas for gesture recognition */}
-        {gestureEnabled && (
-          <div style={{ position: 'fixed', top: '-9999px', left: '-9999px' }}>
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              style={{ width: '640px', height: '480px' }}
-            />
-            <canvas ref={canvasRef} style={{ display: 'none' }} />
+        {/* Swipe Limit Display */}
+        {swipeLimit && !swipeLimit.isPremium && (
+          <div className="swipe-limit-text-display">
+            {swipeLimit.remainingSwipes > 0 ? (
+              <span>{swipeLimit.remainingSwipes} swipes remaining today</span>
+            ) : (
+              <span>Daily limit reached. <Link to="/pricing" className="swipe-limit-link">Upgrade to Premium</Link> for unlimited swipes!</span>
+            )}
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="swipe-actions">
-          <button
-            className="swipe-action-btn swipe-action-btn--pass"
-            onClick={() => handleSwipe('pass')}
-            disabled={swiping || swipeDirection !== null}
-          >
-            ✕ Pass
-          </button>
-          <button
-            className="swipe-action-btn swipe-action-btn--like"
-            onClick={() => handleSwipe('like')}
-            disabled={swiping || swipeDirection !== null}
-          >
-            ♥ Like
-          </button>
+        {/* Video preview for debugging - make it visible temporarily */}
+        <div style={{ 
+          position: 'fixed', 
+          top: '10px', 
+          right: '10px', 
+          width: '320px', 
+          height: '240px',
+          border: '2px solid red',
+          zIndex: 9999,
+          backgroundColor: 'black'
+        }}>
+          <video
+            ref={videoRef}
+            playsInline
+            muted
+            autoPlay
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+          <div style={{ 
+            position: 'absolute', 
+            bottom: '5px', 
+            left: '5px', 
+            color: 'white', 
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            padding: '5px',
+            fontSize: '12px'
+          }}>
+            Camera Preview
+          </div>
         </div>
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
 
         {/* Swipe Limit Modal */}
         {showLimitModal && (

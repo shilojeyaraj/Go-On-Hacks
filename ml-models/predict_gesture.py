@@ -16,7 +16,9 @@ def load_model():
     if not model_path.exists():
         raise FileNotFoundError(f"Model not found at {model_path}")
     
+    print(f"[PYTHON] Loading gesture_classifier.h5 model from {model_path}", file=sys.stderr)
     model = tf.keras.models.load_model(str(model_path))
+    print("[PYTHON] Model loaded successfully", file=sys.stderr)
     return model
 
 def predict(sequence):
@@ -54,6 +56,10 @@ def predict(sequence):
         label_names[i]: float(predictions[i])
         for i in range(len(predictions))
     }
+    
+    # Log prediction result
+    print(f"[PYTHON] Prediction: {gesture} (confidence: {confidence:.3f})", file=sys.stderr)
+    print(f"[PYTHON] Probabilities - YES: {probabilities['YES']:.3f}, NO: {probabilities['NO']:.3f}, NEUTRAL: {probabilities['NEUTRAL']:.3f}", file=sys.stderr)
     
     return {
         "gesture": gesture,

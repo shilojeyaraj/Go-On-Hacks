@@ -19,9 +19,10 @@ async function bootstrap() {
     transform: true,
   }));
   
-  // Allow multiple frontend origins for testing (localhost:3001, localhost:3002, etc.)
+  // Allow multiple frontend origins for testing (localhost:3000-3003)
   const allowedOrigins = [
     process.env.FRONTEND_URL || 'http://localhost:3001',
+    'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3002',
     'http://localhost:3003',
