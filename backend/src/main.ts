@@ -39,6 +39,9 @@ async function bootstrap() {
         // In development, allow any localhost origin
         if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
           callback(null, true);
+        } else if (origin.includes('.onrender.com')) {
+          // Allow Render preview URLs (for PR previews and staging)
+          callback(null, true);
         } else {
           callback(new Error('Not allowed by CORS'));
         }

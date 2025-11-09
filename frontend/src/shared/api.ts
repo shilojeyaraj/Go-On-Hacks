@@ -1,9 +1,8 @@
 import axios from 'axios';
 import { auth } from './firebase';
 
-// Force the API URL to be the backend port
-// TODO: Fix environment variable loading - React requires server restart after .env changes
-const API_URL = 'http://localhost:3000';
+// Use environment variable for API URL, fallback to localhost for development
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
 // Log API URL in development to help debug
 console.log('Environment REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
