@@ -82,6 +82,9 @@ export class GestureTFJSService {
         // Model will remain null, triggering fallback to backend
         // Don't throw - let it fail silently since fallback works
         this.model = null;
+      } finally {
+        // Clear loading promise after completion so it doesn't block future checks
+        this.loadingPromise = null;
       }
     })();
 

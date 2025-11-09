@@ -252,6 +252,38 @@
   min-height: 1.25rem;
 }
 
+.swipe-gesture-instructions {
+  background: rgba(233, 203, 202, 0.3);
+  border: 0.0625rem solid rgba(218, 168, 166, 0.4);
+  border-radius: 0.875rem;
+  padding: 1rem 1.25rem;
+  margin: 0.75rem auto 1rem;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+}
+
+.swipe-gesture-instructions-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-red-dark);
+  margin: 0 0 0.5rem 0;
+  letter-spacing: 0.01em;
+}
+
+.swipe-gesture-instructions-text {
+  font-size: 0.8125rem;
+  color: var(--text-dark);
+  line-height: 1.6;
+  margin: 0;
+  font-weight: 400;
+}
+
+.swipe-gesture-instructions-text strong {
+  color: var(--color-red-dark);
+  font-weight: 600;
+}
+
 .swipe-limit-display {
   background: rgba(233, 203, 202, 0.4);
   border: 0.125rem solid rgba(218, 168, 166, 0.5);

@@ -32,8 +32,8 @@ export class GestureService {
       
       return result;
     } catch (error: any) {
-      console.error('[GestureService] ❌ Request failed:', error.message);
-      console.error('[GestureService] Error details:', error);
+      // Silent error handling - backend may be unavailable
+      // Frontend will handle gracefully
       throw error;
     }
   }

@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Navigation } from '../../components/Navigation/Navigation';
 import { UserService, UserProfile } from '../../services/user.service';
 import { ChatService } from '../../services/chat.service';
-import { GestureService } from '../../services/gesture.service';
-import { GestureTFJSService } from '../../services/gesture-tfjs.service';
 import { useAuthUser } from '../../hooks/useAuthUser';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '../../components/Button/Button';
@@ -38,42 +36,141 @@ export const Swipe: React.FC = () => {
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Gesture recognition state - ALWAYS ENABLED
-  const [gestureEnabled] = useState(true); // Always enabled, independent of swipeEnabled
+  // Gesture recognition is always enabled - no state needed
   const [gestureStatus, setGestureStatus] = useState<string>('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const faceMeshRef = useRef<any>(null);
-  const frameBufferRef = useRef<number[][]>([]);
   const animationFrameRef = useRef<number | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
-  const lastPredictionTime = useRef<number>(0);
   const gestureCooldownRef = useRef<boolean>(false);
   const cameraStartedRef = useRef<boolean>(false);
-  const lastNoFaceLogTime = useRef<number>(0);
-  const lastBufferLogTime = useRef<number>(0);
-  // Gesture smoothing: track recent predictions to detect patterns
-  const recentGesturesRef = useRef<Array<{ gesture: string; confidence: number }>>([]);
 
-  const SEQUENCE_LENGTH = 15;
-  const PREDICTION_INTERVAL = 150; // Predict every 150ms (fast detection for 0.5-2s gestures)
-  const GESTURE_COOLDOWN = 1000; // 1 second cooldown after gesture detection
+  const GESTURE_COOLDOWN = 2500; // 2.5 seconds debounce after successful gesture to prevent double-actions
 
   useEffect(() => {
     checkProfileAndLoadProfiles();
     checkSwipeLimit();
-    
-    // Try to load TensorFlow.js model for browser-based predictions (optional optimization)
-    // If not available, backend Python prediction will be used (which works perfectly)
-    if (GestureTFJSService.isAvailable && GestureTFJSService.isAvailable()) {
-      GestureTFJSService.loadModel().catch(() => {
-        // Error already logged in service - backend fallback is automatic
-      });
-    }
     // Backend prediction will be used automatically if browser model not available
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // Extract features from face landmarks (matching training: 9 features per frame)
+  // Rule-based Gesture Detector - HEAD MOVEMENT DETECTION
+  const gestureDetectorRef = useRef<{
+    baselineNose: { x: number; y: number; z: number } | null;
+    nosePositions: Array<{ x: number; y: number }>; // Track head movement direction
+    gestureHistory: string[];
+    frameCount: number;
+    calibrationFrames: number;
+    detect: (landmarks: any[]) => { gesture: string; confidence: number };
+    recalibrate: () => void;
+  }>({
+    baselineNose: null,
+    nosePositions: [],
+    gestureHistory: [],
+    frameCount: 0,
+    calibrationFrames: 60, // Wait 2 seconds (60 frames at 30fps) before detecting
+    detect: (landmarks: any[]) => {
+      const detector = gestureDetectorRef.current;
+      detector.frameCount++;
+
+      // Get key landmarks - NOSE for head movement detection
+      const noseTip = landmarks[1]; // Nose tip is most stable for head tracking
+
+      // Calibration phase - wait before starting detection
+      if (detector.frameCount <= detector.calibrationFrames) {
+        if (!detector.baselineNose) {
+          detector.baselineNose = { x: noseTip.x, y: noseTip.y, z: noseTip.z };
+        }
+        return { gesture: 'NEUTRAL', confidence: 0 };
+      }
+
+      if (!detector.baselineNose) {
+        return { gesture: 'NEUTRAL', confidence: 0 };
+      }
+
+      // Track nose position for head movement
+      detector.nosePositions.push({ x: noseTip.x, y: noseTip.y });
+      if (detector.nosePositions.length > 15) {
+        detector.nosePositions.shift();
+      }
+
+      // Calculate head movement from baseline
+      const horizontalMovement = noseTip.x - detector.baselineNose.x; // Positive = right, Negative = left
+      const verticalMovement = noseTip.y - detector.baselineNose.y; // Positive = down, Negative = up
+      
+      // Calculate movement ranges over recent frames
+      const horizontalRange = detector.nosePositions.length >= 5 
+        ? Math.max(...detector.nosePositions.map(p => p.x)) - Math.min(...detector.nosePositions.map(p => p.x))
+        : 0;
+      const verticalRange = detector.nosePositions.length >= 5
+        ? Math.max(...detector.nosePositions.map(p => p.y)) - Math.min(...detector.nosePositions.map(p => p.y))
+        : 0;
+
+      // HEAD MOVEMENT DETECTION
+      // Left-right head movement (shaking) = PASS/DISLIKE
+      // Up-down head movement (nodding) = LIKE
+      
+      const absHorizontal = Math.abs(horizontalMovement);
+      const absVertical = Math.abs(verticalMovement);
+      
+      // Detect horizontal head movement (left-right shaking)
+      const isHorizontalMovement = horizontalRange > 0.02 && horizontalRange > verticalRange * 1.2;
+      const hasSignificantHorizontal = absHorizontal > 0.02;
+      
+      // Detect vertical head movement (up-down nodding)
+      const isVerticalMovement = verticalRange > 0.02 && verticalRange > horizontalRange * 1.2;
+      const hasSignificantVertical = absVertical > 0.02;
+
+      if (isHorizontalMovement && hasSignificantHorizontal) {
+        // Left-right head movement = PASS/DISLIKE
+        const confidence = Math.min(0.95, Math.max(0.75, horizontalRange * 20));
+        
+        detector.gestureHistory.push('NO');
+        if (detector.gestureHistory.length > 8) {
+          detector.gestureHistory.shift();
+        }
+        
+        // Require at least 3 NO detections in last 5 frames
+        const recent = detector.gestureHistory.slice(-5);
+        const noCount = recent.filter(g => g === 'NO').length;
+        if (noCount >= 3) {
+          return { gesture: 'NO', confidence };
+        }
+      } else if (isVerticalMovement && hasSignificantVertical) {
+        // Up-down head movement = LIKE
+        const confidence = Math.min(0.95, Math.max(0.75, verticalRange * 20));
+        
+        detector.gestureHistory.push('YES');
+        if (detector.gestureHistory.length > 8) {
+          detector.gestureHistory.shift();
+        }
+        
+        // Require at least 3 YES detections in last 5 frames
+        const recent = detector.gestureHistory.slice(-5);
+        const yesCount = recent.filter(g => g === 'YES').length;
+        if (yesCount >= 3) {
+          return { gesture: 'YES', confidence };
+        }
+      }
+
+      // NEUTRAL - no significant head movement detected
+      detector.gestureHistory.push('NEUTRAL');
+      if (detector.gestureHistory.length > 8) {
+        detector.gestureHistory.shift();
+      }
+      return { gesture: 'NEUTRAL', confidence: 0.5 };
+    },
+    recalibrate: () => {
+      gestureDetectorRef.current.frameCount = 0;
+      gestureDetectorRef.current.baselineNose = null;
+      gestureDetectorRef.current.nosePositions = [];
+      gestureDetectorRef.current.gestureHistory = [];
+    },
+  });
+
+  // Extract features from face landmarks (not used - kept for potential future use)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const extractFeatures = useCallback((landmarks: any[]): number[] | null => {
     if (!landmarks || landmarks.length === 0) {
       return null;
@@ -121,27 +218,125 @@ export const Swipe: React.FC = () => {
     return features; // Should be 9 features total
   }, []);
 
-  // Process face landmarks and build sequence
+  // Handle swipe action (defined before processFaceLandmarks to avoid use-before-define error)
+  const handleSwipe = useCallback(async (action: 'like' | 'pass') => {
+    if (swiping || currentIndex >= profiles.length || swipeDirection) return;
+
+    const currentProfile = profiles[currentIndex];
+    if (!currentProfile || !user?.uid) return;
+
+    // Check swipe limit before swiping (with error handling)
+    try {
+      const limit = await UserService.getSwipeLimit();
+      if (!limit.canSwipe) {
+        setShowLimitModal(true);
+        return;
+      }
+    } catch (err: any) {
+      // If backend is unavailable, allow swiping (graceful degradation)
+      // The backend will handle the limit check when the swipe request is made
+    }
+
+    // Set swipe direction for animation
+    setSwipeDirection(action === 'like' ? 'right' : 'left');
+
+    try {
+      setSwiping(true);
+      const result = await UserService.swipe(currentProfile.uid, action);
+
+      // Update swipe limit after successful swipe
+      await checkSwipeLimit();
+
+      if (result.isMatch && action === 'like') {
+        // It's a match! Show match modal after animation
+        setTimeout(() => {
+          setMatchedUser(currentProfile);
+          setShowMatchModal(true);
+        }, 300);
+      }
+
+      // Move to next profile after animation completes
+      setTimeout(() => {
+        setCurrentIndex(prev => prev + 1);
+        setSwipeDirection(null);
+        setDragOffset({ x: 0, y: 0 });
+      }, 600);
+    } catch (err: any) {
+      console.error('Failed to swipe:', err);
+      setSwipeDirection(null);
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to swipe. Please try again.';
+      
+      // Check if it's a swipe limit error
+      if (errorMessage.includes('swipe limit') || errorMessage.includes('Daily swipe limit')) {
+        setShowLimitModal(true);
+        await checkSwipeLimit();
+      } else {
+        alert(errorMessage);
+      }
+    } finally {
+      setSwiping(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [swiping, currentIndex, profiles, swipeDirection, user]);
+
+  // Process face landmarks - use rule-based gesture detector
   const processFaceLandmarks = useCallback((landmarks: any[]) => {
     if (!landmarks || !Array.isArray(landmarks) || landmarks.length === 0) {
       return;
     }
+
+    // Check debounce/cooldown first - prevent double-liking
+    if (gestureCooldownRef.current) {
+      return; // Still in cooldown, ignore all gestures
+    }
+
+    // Use rule-based gesture detector
+    const ruleBasedResult = gestureDetectorRef.current.detect(landmarks);
     
-    const features = extractFeatures(landmarks);
-    if (!features) {
-      return;
+    // Log gesture detection
+    if (ruleBasedResult.gesture !== 'NEUTRAL' || ruleBasedResult.confidence > 0.5) {
+      const confidencePct = (ruleBasedResult.confidence * 100).toFixed(0);
+      console.log(`[Gesture] ${ruleBasedResult.gesture} (${confidencePct}% confidence)`);
     }
 
-    // Add frame to buffer
-    frameBufferRef.current.push(features);
-
-    // Keep buffer at sequence length
-    if (frameBufferRef.current.length > SEQUENCE_LENGTH) {
-      frameBufferRef.current.shift();
+    // Handle gestures - DIRECTIONAL LICKING
+    // Increased confidence threshold to 0.75 for more reliable detection
+    if (ruleBasedResult.confidence >= 0.75 && !swiping && !swipeDirection && !gestureCooldownRef.current) {
+      if (ruleBasedResult.gesture === 'YES') {
+        // Up-down head movement (nodding) detected - Swipe Right (Like)
+        console.log(`[Gesture] YES (Nodding Up-Down) → Swipe RIGHT`);
+        
+        // Set cooldown immediately to prevent double-liking
+        gestureCooldownRef.current = true;
+        setGestureStatus('Liked!');
+        
+        // Call handleSwipe
+        handleSwipe('like');
+        
+        // Reset cooldown after 2 seconds
+        setTimeout(() => {
+          gestureCooldownRef.current = false;
+          setGestureStatus('Camera active - Show your face');
+        }, GESTURE_COOLDOWN);
+      } else if (ruleBasedResult.gesture === 'NO') {
+        // Left-right head movement (shaking) detected - Swipe Left (Pass/Dislike)
+        console.log(`[Gesture] NO (Shaking Left-Right) → Swipe LEFT`);
+        
+        // Set cooldown immediately to prevent double-action
+        gestureCooldownRef.current = true;
+        setGestureStatus('Passed!');
+        
+        // Call handleSwipe
+        handleSwipe('pass');
+        
+        // Reset cooldown after 2 seconds
+        setTimeout(() => {
+          gestureCooldownRef.current = false;
+          setGestureStatus('Camera active - Show your face');
+        }, GESTURE_COOLDOWN);
+      }
     }
-
-    // No logging - buffer status is internal
-  }, [extractFeatures]);
+  }, [swiping, swipeDirection, handleSwipe]);
 
   // Load MediaPipe Face Mesh
   useEffect(() => {
@@ -237,158 +432,8 @@ export const Swipe: React.FC = () => {
     };
   }, [processFaceLandmarks]);
 
-  const handleSwipe = useCallback(async (action: 'like' | 'pass') => {
-    if (swiping || currentIndex >= profiles.length || swipeDirection) return;
 
-    const currentProfile = profiles[currentIndex];
-    if (!currentProfile || !user?.uid) return;
-
-    // Check swipe limit before swiping (with error handling)
-    try {
-      const limit = await UserService.getSwipeLimit();
-      if (!limit.canSwipe) {
-        setShowLimitModal(true);
-        return;
-      }
-    } catch (err: any) {
-      // If backend is unavailable, allow swiping (graceful degradation)
-      // The backend will handle the limit check when the swipe request is made
-    }
-
-    // Set swipe direction for animation
-    setSwipeDirection(action === 'like' ? 'right' : 'left');
-
-    try {
-      setSwiping(true);
-      const result = await UserService.swipe(currentProfile.uid, action);
-
-      // Update swipe limit after successful swipe
-      await checkSwipeLimit();
-
-      if (result.isMatch && action === 'like') {
-        // It's a match! Show match modal after animation
-        setTimeout(() => {
-          setMatchedUser(currentProfile);
-          setShowMatchModal(true);
-        }, 300);
-      }
-
-      // Move to next profile after animation completes
-      setTimeout(() => {
-        setCurrentIndex(prev => prev + 1);
-        setSwipeDirection(null);
-        setDragOffset({ x: 0, y: 0 });
-      }, 600);
-    } catch (err: any) {
-      console.error('Failed to swipe:', err);
-      setSwipeDirection(null);
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to swipe. Please try again.';
-      
-      // Check if it's a swipe limit error
-      if (errorMessage.includes('swipe limit') || errorMessage.includes('Daily swipe limit')) {
-        setShowLimitModal(true);
-        await checkSwipeLimit();
-      } else {
-        alert(errorMessage);
-      }
-    } finally {
-      setSwiping(false);
-    }
-  }, [swiping, currentIndex, profiles, swipeDirection, user]);
-
-  // Predict gesture from frame buffer
-  const predictGesture = useCallback(async () => {
-    if (frameBufferRef.current.length !== SEQUENCE_LENGTH || gestureCooldownRef.current) {
-      return;
-    }
-
-    try {
-      const sequence = [...frameBufferRef.current];
-      
-      // Try TensorFlow.js first (browser-based, faster, no backend dependency)
-      let result;
-      try {
-        if (GestureTFJSService.isModelLoaded()) {
-          result = await GestureTFJSService.predictGesture(sequence);
-        } else {
-          // Fallback to backend Python prediction
-          const backendResult = await GestureService.predictGesture(sequence);
-          result = {
-            gesture: backendResult.gesture as 'YES' | 'NO' | 'NEUTRAL',
-            confidence: backendResult.confidence,
-            probabilities: backendResult.probabilities,
-          };
-        }
-      } catch (tfjsError: any) {
-        // If TFJS fails, fallback to backend (this is expected if browser model not available)
-        const backendResult = await GestureService.predictGesture(sequence);
-        result = {
-          gesture: backendResult.gesture as 'YES' | 'NO' | 'NEUTRAL',
-          confidence: backendResult.confidence,
-          probabilities: backendResult.probabilities,
-        };
-      }
-
-      // Log detected gesture (YES, NO, or NEUTRAL)
-      const confidencePct = (result.confidence * 100).toFixed(0);
-      console.log(`[Gesture] ${result.gesture} (${confidencePct}% confidence)`);
-
-      // Gesture smoothing: track recent predictions (keep last 5)
-      recentGesturesRef.current.push({ gesture: result.gesture, confidence: result.confidence });
-      if (recentGesturesRef.current.length > 5) {
-        recentGesturesRef.current.shift();
-      }
-
-      // Check for gesture patterns (YES or NO appearing multiple times)
-      const recentYES = recentGesturesRef.current.filter(g => g.gesture === 'YES').length;
-      const recentNO = recentGesturesRef.current.filter(g => g.gesture === 'NO').length;
-
-      // Lower threshold for YES/NO (60% instead of 70%) to catch more gestures
-      const threshold = 0.6;
-      
-      // Check probabilities - if YES or NO is higher than NEUTRAL, prefer it
-      const yesProb = result.probabilities?.YES || 0;
-      const noProb = result.probabilities?.NO || 0;
-      const neutralProb = result.probabilities?.NEUTRAL || 0;
-      const yesIsHigher = yesProb > neutralProb && yesProb > noProb;
-      const noIsHigher = noProb > neutralProb && noProb > yesProb;
-      
-      // Act on high confidence OR if we see a pattern (3+ YES or NO in recent predictions)
-      // OR if YES/NO probability is higher than NEUTRAL (even if below threshold)
-      const hasYESPattern = recentYES >= 3;
-      const hasNOPattern = recentNO >= 3;
-      const highConfidenceYES = result.gesture === 'YES' && result.confidence > threshold;
-      const highConfidenceNO = result.gesture === 'NO' && result.confidence > threshold;
-      const yesPreferred = (highConfidenceYES || hasYESPattern || (yesIsHigher && yesProb > 0.4));
-      const noPreferred = (highConfidenceNO || hasNOPattern || (noIsHigher && noProb > 0.4));
-
-      if (yesPreferred && !swiping && !swipeDirection) {
-        // YES (true) → swipe right (like)
-        console.log(`[Gesture] ✓ YES → Swipe RIGHT ${hasYESPattern ? '(pattern detected)' : ''}`);
-        setGestureStatus('✓ Liked!');
-        gestureCooldownRef.current = true;
-        recentGesturesRef.current = []; // Reset after action
-        setTimeout(() => {
-          gestureCooldownRef.current = false;
-          setGestureStatus('Camera active - Show your face');
-        }, GESTURE_COOLDOWN);
-        handleSwipe('like');
-      } else if (noPreferred && !swiping && !swipeDirection) {
-        // NO (false) → swipe left (pass)
-        console.log(`[Gesture] ✓ NO → Swipe LEFT ${hasNOPattern ? '(pattern detected)' : ''}`);
-        setGestureStatus('✕ Passed!');
-        gestureCooldownRef.current = true;
-        recentGesturesRef.current = []; // Reset after action
-        setTimeout(() => {
-          gestureCooldownRef.current = false;
-          setGestureStatus('Camera active - Show your face');
-        }, GESTURE_COOLDOWN);
-        handleSwipe('pass');
-      }
-    } catch (err: any) {
-      // Silent error handling - no logging to avoid performance impact
-    }
-  }, [swiping, swipeDirection, handleSwipe]);
+  // Rule-based gesture detection is handled in processFaceLandmarks
 
   // Stop camera
   const stopCamera = useCallback(() => {
@@ -406,7 +451,6 @@ export const Swipe: React.FC = () => {
       videoRef.current.srcObject = null;
     }
 
-    frameBufferRef.current = [];
     setGestureStatus('');
   }, []);
 
@@ -424,38 +468,35 @@ export const Swipe: React.FC = () => {
         return;
       }
 
-      // Draw video frame to canvas
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      }
-
-      // Process with MediaPipe
-      if (faceMeshRef.current) {
-        try {
-          await faceMeshRef.current.send({ image: canvas });
-        } catch (error: any) {
-          // Silently handle MediaPipe errors - don't spam console
+      // Draw video frame to canvas - confirm video is being captured
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         }
+
+        // Process with MediaPipe - video is working, checking for gestures
+        if (faceMeshRef.current) {
+          try {
+            await faceMeshRef.current.send({ image: canvas });
+          } catch (error: any) {
+            // Silently handle MediaPipe errors - don't spam console
+          }
+        }
+      } else {
+        // Video not ready yet
+        console.log('[Video] Waiting for video stream...');
       }
 
-      // Check if we have enough frames and enough time has passed
-      const now = Date.now();
-      if (
-        frameBufferRef.current.length === SEQUENCE_LENGTH &&
-        now - lastPredictionTime.current >= PREDICTION_INTERVAL &&
-        !gestureCooldownRef.current
-      ) {
-        lastPredictionTime.current = now;
-        predictGesture();
-      }
+      // Rule-based detection happens in processFaceLandmarks callback
+      // No need for separate prediction interval - detection is real-time
 
       animationFrameRef.current = requestAnimationFrame(processFrame);
     };
 
     processFrame();
-  }, [predictGesture]);
+  }, [processFaceLandmarks]);
 
   // Initialize camera - ALWAYS ENABLED (independent of swipeEnabled)
   useEffect(() => {
@@ -571,11 +612,16 @@ export const Swipe: React.FC = () => {
     };
   }, [startGestureDetection, stopCamera]);
 
-  // Handle mouse move globally for better drag experience
+  // Handle global mouse move for smooth dragging when mouse leaves card
   useEffect(() => {
-    if (!isDragging) return;
+    if (!isDragging || !swipeEnabled) return;
 
     const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (!swipeEnabled) {
+        setIsDragging(false);
+        setDragOffset({ x: 0, y: 0 });
+        return;
+      }
       const deltaX = e.clientX - dragStart.x;
       const deltaY = e.clientY - dragStart.y;
       setDragOffset({ x: deltaX, y: deltaY });
@@ -586,7 +632,7 @@ export const Swipe: React.FC = () => {
     return () => {
       document.removeEventListener('mousemove', handleGlobalMouseMove);
     };
-  }, [isDragging, dragStart]);
+  }, [isDragging, swipeEnabled, dragStart]);
 
   // Gesture recognition is always enabled - no toggle needed
   // Removed toggleGestureRecognition function since gestures are always on
@@ -625,14 +671,14 @@ export const Swipe: React.FC = () => {
     }
   };
 
-  // Mouse drag handlers
+  // Mouse handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!swipeEnabled || swiping || swipeDirection) return;
     setIsDragging(true);
     setDragStart({ x: e.clientX, y: e.clientY });
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
+  const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging || swiping || swipeDirection) return;
     const deltaX = e.clientX - dragStart.x;
     const deltaY = e.clientY - dragStart.y;
@@ -686,20 +732,9 @@ export const Swipe: React.FC = () => {
     }
   };
 
-  // Handle mouse move and up globally for better drag experience
+  // Handle global mouse up for when mouse leaves card area
   useEffect(() => {
     if (!isDragging || !swipeEnabled) return;
-
-    const handleGlobalMouseMove = (e: MouseEvent) => {
-      if (!swipeEnabled) {
-        setIsDragging(false);
-        setDragOffset({ x: 0, y: 0 });
-        return;
-      }
-      const deltaX = e.clientX - dragStart.x;
-      const deltaY = e.clientY - dragStart.y;
-      setDragOffset({ x: deltaX, y: deltaY });
-    };
 
     const handleGlobalMouseUp = () => {
       setIsDragging(false);
@@ -719,14 +754,13 @@ export const Swipe: React.FC = () => {
       });
     };
 
-    document.addEventListener('mousemove', handleGlobalMouseMove);
     document.addEventListener('mouseup', handleGlobalMouseUp);
 
     return () => {
-      document.removeEventListener('mousemove', handleGlobalMouseMove);
       document.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [isDragging, dragStart, handleSwipe, swipeEnabled]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDragging, swipeEnabled]);
 
   // Stop dragging if swipeEnabled becomes false
   useEffect(() => {
@@ -838,8 +872,8 @@ export const Swipe: React.FC = () => {
     <>
       <Navigation />
       <div className="swipe-container">
-        {/* Swipe Enable Toggle Button */}
-        <div className="swipe-enable-control">
+        {/* Gesture Controls */}
+        <div className="swipe-enable-control" style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={() => setSwipeEnabled(!swipeEnabled)}
@@ -861,6 +895,9 @@ export const Swipe: React.FC = () => {
               userSelect: 'none',
             } as React.CSSProperties}
             onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp} // Handle mouse leaving the card
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -945,6 +982,16 @@ export const Swipe: React.FC = () => {
           {gestureStatus && (
             <div className="swipe-gesture-status">{gestureStatus}</div>
           )}
+        </div>
+
+        {/* Gesture Instructions - Below Status */}
+        <div className="swipe-gesture-instructions">
+          <p className="swipe-gesture-instructions-title">
+            Gesture Controls
+          </p>
+          <p className="swipe-gesture-instructions-text">
+            <strong>Like:</strong> Nod your head up/down (vertical) | <strong>Be freaky:</strong> Shake your head left/right (horizontal). The system will wait a moment before detecting your gesture.
+          </p>
         </div>
 
         {/* Swipe Limit Display */}
