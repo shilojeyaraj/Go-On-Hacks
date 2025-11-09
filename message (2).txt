@@ -1,0 +1,184 @@
+import React, { useState, useRef } from 'react';
+import { Navigation } from '../../components/Navigation/Navigation';
+import './Match.css';
+
+interface Profile {
+  id: number;
+}
+
+const SAMPLE_PROFILES: Profile[] = [
+  { id: 1 },
+  { id: 2 },
+  { id: 3 },
+  { id: 4 },
+  { id: 5 }
+];
+
+export const Match: React.FC = () => {
+  const [profiles] = useState<Profile[]>(SAMPLE_PROFILES);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const currentProfile = profiles[currentIndex];
+
+  const handleSwipe = (direction: 'left' | 'right') => {
+    setSwipeDirection(direction);
+    
+    setTimeout(() => {
+      if (currentIndex < profiles.length - 1) {
+        setCurrentIndex(currentIndex + 1);
+      } else {
+        // Reset to beginning when all profiles are viewed
+        setCurrentIndex(0);
+      }
+      setSwipeDirection(null);
+    }, 600);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    const deltaX = e.clientX - dragStart.x;
+    const deltaY = e.clientY - dragStart.y;
+    setDragOffset({ x: deltaX, y: deltaY });
+  };
+
+  const handleMouseUp = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+
+    // If dragged far enough, trigger swipe
+    if (Math.abs(dragOffset.x) > 150) {
+      handleSwipe(dragOffset.x > 0 ? 'right' : 'left');
+    }
+    
+    setDragOffset({ x: 0, y: 0 });
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsDragging(true);
+    setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const deltaX = e.touches[0].clientX - dragStart.x;
+    const deltaY = e.touches[0].clientY - dragStart.y;
+    setDragOffset({ x: deltaX, y: deltaY });
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+
+    // If dragged far enough, trigger swipe
+    if (Math.abs(dragOffset.x) > 150) {
+      handleSwipe(dragOffset.x > 0 ? 'right' : 'left');
+    }
+    
+    setDragOffset({ x: 0, y: 0 });
+  };
+
+  if (!currentProfile) {
+    return (
+      <>
+        <Navigation />
+        <div className="match-container">
+          <div className="match-header">
+            <h1 className="match-title">Find Your Match</h1>
+            <p className="match-subtitle">
+              No profiles remaining
+            </p>
+          </div>
+          <div className="match-content">
+            <div className="match-empty"></div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  const rotation = isDragging ? dragOffset.x / 30 : 0;
+  const opacity = isDragging ? 1 - Math.abs(dragOffset.x) / 300 : 1;
+  
+  // Calculate color tint based on drag direction
+  const getCardBackground = () => {
+    if (!isDragging) return 'white';
+    
+    const dragAmount = Math.abs(dragOffset.x);
+    const intensity = Math.min(dragAmount / 150, 0.6); // Max 60% color intensity
+    
+    if (dragOffset.x > 0) {
+      // Dragging right - green tint
+      return `rgba(76, 175, 80, ${intensity})`;
+    } else if (dragOffset.x < 0) {
+      // Dragging left - red tint
+      return `rgba(244, 67, 54, ${intensity})`;
+    }
+    return 'white';
+  };
+
+  return (
+    <>
+      <Navigation />
+      <div className="match-container">
+        <div className="match-header">
+          <h1 className="match-title">Find Your Match</h1>
+          <p className="match-subtitle">
+            {profiles.length - currentIndex} profile{profiles.length - currentIndex !== 1 ? 's' : ''} remaining
+          </p>
+        </div>
+
+        <div className="match-content">
+          <div 
+            ref={cardRef}
+            className={`match-card ${swipeDirection ? `match-card--swipe-${swipeDirection}` : ''}`}
+            style={{
+              transform: isDragging 
+                ? `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${rotation}deg)`
+                : '',
+              opacity: opacity,
+              backgroundColor: getCardBackground(),
+              cursor: isDragging ? 'grabbing' : 'grab'
+            }}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+          </div>
+
+          {/* Swipe buttons */}
+          <div className="match-actions">
+            <button 
+              className="match-button match-button--nope"
+              onClick={() => handleSwipe('left')}
+              disabled={swipeDirection !== null}
+            >
+              <span className="match-button-icon">✕</span>
+            </button>
+            <button 
+              className="match-button match-button--like"
+              onClick={() => handleSwipe('right')}
+              disabled={swipeDirection !== null}
+            >
+              <span className="match-button-icon">♥</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+

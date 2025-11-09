@@ -16,7 +16,12 @@ export class AuthUserSyncMiddleware implements NestMiddleware {
     };
 
     if (decoded?.uid) {
-      await this.usersService.upsertFromFirebase(decoded);
+      try {
+        await this.usersService.upsertFromFirebase(decoded);
+      } catch (error: any) {
+        // Log error but don't block the request if MongoDB is unavailable
+        console.warn('Failed to sync user to MongoDB (MongoDB may be unavailable):', error.message);
+      }
     }
 
     next();

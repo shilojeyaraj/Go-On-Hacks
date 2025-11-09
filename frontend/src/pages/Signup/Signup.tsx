@@ -32,7 +32,7 @@ export const Signup: React.FC = () => {
 
     try {
       await AuthService.signUp(email, password);
-      navigate('/');
+      navigate('/profile'); // Redirect to profile page after signup
     } catch (err: any) {
       setError(err.message || 'Failed to sign up');
     } finally {
@@ -46,7 +46,7 @@ export const Signup: React.FC = () => {
 
     try {
       await AuthService.signInWithGoogle();
-      navigate('/');
+      navigate('/profile'); // Redirect to profile page after signup
     } catch (err: any) {
       setError(err.message || 'Failed to sign up with Google');
     } finally {
