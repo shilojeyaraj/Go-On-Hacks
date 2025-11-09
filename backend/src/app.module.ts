@@ -4,6 +4,7 @@ import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { UsersModule } from './modules/users/users.module';
 import { GesturesModule } from './modules/gestures/gestures.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 // Check if MongoDB should be enabled (set MONGODB_ENABLED=false to disable)
 const MONGODB_ENABLED = process.env.MONGODB_ENABLED !== 'false';
@@ -28,8 +29,8 @@ const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/ToeGether
           }),
         ]
       : []),
-    // Only include UsersModule if MongoDB is enabled
-    ...(MONGODB_ENABLED ? [UsersModule] : []),
+    // Only include UsersModule and ChatModule if MongoDB is enabled
+    ...(MONGODB_ENABLED ? [UsersModule, ChatModule] : []),
     GesturesModule,
   ],
 })

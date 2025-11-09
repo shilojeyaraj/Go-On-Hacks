@@ -2,11 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
+import { Swipe, SwipeDocument } from './schemas/swipe.schema';
 import { UpdateProfileDto, UpdatePreferencesDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Swipe.name) private swipeModel: Model<SwipeDocument>,
+  ) {}
 
   async upsertFromFirebase(decoded: any): Promise<UserDocument> {
     const updateData: any = {
@@ -169,6 +173,111 @@ export class UsersService {
       user.feetPhotos.length > 0 &&
       user.fullName
     );
+  }
+
+  /**
+   * Record a swipe action (like or pass)
+   */
+  async swipe(swiperId: string, swipedId: string, action: 'like' | 'pass'): Promise<{ isMatch: boolean; message?: string }> {
+    if (swiperId === swipedId) {
+      throw new Error('Cannot swipe on yourself');
+    }
+
+    // Check if user already swiped on this person
+    const existingSwipe = await this.swipeModel.findOne({
+      swiperId,
+      swipedId,
+    }).exec();
+
+    if (existingSwipe) {
+      // Update existing swipe
+      existingSwipe.action = action;
+      await existingSwipe.save();
+    } else {
+      // Create new swipe
+      await this.swipeModel.create({
+        swiperId,
+        swipedId,
+        action,
+      });
+    }
+
+    // Check if it's a mutual like (match)
+    if (action === 'like') {
+      const mutualLike = await this.swipeModel.findOne({
+        swiperId: swipedId,
+        swipedId: swiperId,
+        action: 'like',
+      }).exec();
+
+      if (mutualLike) {
+        console.log(`[Match] Mutual match between ${swiperId} and ${swipedId}`);
+        return { isMatch: true, message: 'It\'s a match!' };
+      }
+    }
+
+    return { isMatch: false };
+  }
+
+  /**
+   * Get mutual matches (users who have both swiped right on each other)
+   */
+  async getMutualMatches(userId: string): Promise<UserDocument[]> {
+    // Find all users this user has liked
+    const userLikes = await this.swipeModel.find({
+      swiperId: userId,
+      action: 'like',
+    }).exec();
+
+    const likedUserIds = userLikes.map(swipe => swipe.swipedId);
+
+    if (likedUserIds.length === 0) {
+      return [];
+    }
+
+    // Find all users who have also liked this user
+    const mutualLikes = await this.swipeModel.find({
+      swiperId: { $in: likedUserIds },
+      swipedId: userId,
+      action: 'like',
+    }).exec();
+
+    const mutualMatchIds = mutualLikes.map(swipe => swipe.swiperId);
+
+    if (mutualMatchIds.length === 0) {
+      return [];
+    }
+
+    // Get user profiles for mutual matches
+    const matches = await this.userModel.find({
+      uid: { $in: mutualMatchIds },
+      profileCompleted: true,
+    }).exec();
+
+    console.log(`[Match] Found ${matches.length} mutual matches for ${userId}`);
+    return matches;
+  }
+
+  /**
+   * Get profiles the user hasn't swiped on yet (for discovery/swipe page)
+   */
+  async getDiscoverProfiles(userId: string): Promise<UserDocument[]> {
+    // Get all users this user has already swiped on
+    const swipedUsers = await this.swipeModel.find({
+      swiperId: userId,
+    }).exec();
+
+    const swipedIds = swipedUsers.map(swipe => swipe.swipedId);
+    swipedIds.push(userId); // Exclude self
+
+    // Get all completed profiles that haven't been swiped on
+    const profiles = await this.userModel.find({
+      uid: { $nin: swipedIds },
+      profileCompleted: true,
+    }).exec();
+
+    console.log(`[Discover] Found ${profiles.length} profiles for ${userId} to discover`);
+    return profiles;
   }
 }
 

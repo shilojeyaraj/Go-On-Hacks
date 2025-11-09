@@ -69,6 +69,19 @@ export class UserService {
     return response.data;
   }
 
+  static async getDiscoverProfiles(): Promise<UserProfile[]> {
+    const response = await api.get('/users/discover');
+    return response.data;
+  }
+
+  static async swipe(swipedId: string, action: 'like' | 'pass'): Promise<{ isMatch: boolean; message?: string }> {
+    const response = await api.post('/users/swipe', {
+      swipedId,
+      action,
+    });
+    return response.data;
+  }
+
   static async convertFileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();

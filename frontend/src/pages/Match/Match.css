@@ -95,6 +95,12 @@
   object-fit: cover;
 }
 
+.match-card-message-btn {
+  margin-top: 1rem;
+  width: 100%;
+  max-width: 12rem;
+}
+
 @media (max-width: 48rem) {
   .matches-grid {
     grid-template-columns: 1fr;

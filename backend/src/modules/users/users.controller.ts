@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, Request, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Put, Post, Body, Request, Param, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FirebaseAuthGuard } from '../../common/guards/firebase-auth.guard';
 import { UsersService } from './users.service';
 import { UpdateProfileDto, UpdatePreferencesDto } from './dto/update-profile.dto';
@@ -44,7 +44,28 @@ export class UsersController {
 
   @Get('matches')
   async getMatches(@Request() req) {
-    return this.usersService.findCompletedProfiles(req.user.uid);
+    // Return only mutual matches (users who have both swiped right on each other)
+    return this.usersService.getMutualMatches(req.user.uid);
+  }
+
+  @Get('discover')
+  async getDiscoverProfiles(@Request() req) {
+    // Return profiles the user hasn't swiped on yet
+    return this.usersService.getDiscoverProfiles(req.user.uid);
+  }
+
+  @Post('swipe')
+  async swipe(@Request() req, @Body() body: { swipedId: string; action: 'like' | 'pass' }) {
+    return this.usersService.swipe(req.user.uid, body.swipedId, body.action);
+  }
+
+  @Get('by-uid/:uid')
+  async getUser(@Param('uid') uid: string) {
+    const user = await this.usersService.findByUid(uid);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    return user;
   }
 }
 

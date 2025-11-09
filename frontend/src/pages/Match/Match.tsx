@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Navigation } from '../../components/Navigation/Navigation';
 import { UserService, UserProfile } from '../../services/user.service';
+import { ChatService } from '../../services/chat.service';
 import { useAuthUser } from '../../hooks/useAuthUser';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '../../components/Button/Button';
 import './Match.css';
 
 export const Match: React.FC = () => {
@@ -113,6 +115,24 @@ export const Match: React.FC = () => {
                     <img src={match.feetPhotos[0]} alt="Feet preview" />
                   </div>
                 )}
+                <Button
+                  variant="primary"
+                  className="match-card-message-btn"
+                  onClick={async () => {
+                    if (user?.uid) {
+                      try {
+                        // Get or create conversation
+                        await ChatService.getOrCreateConversation(match.uid);
+                        // Navigate to chat page with user ID in state
+                        navigate('/chat', { state: { userId: match.uid } });
+                      } catch (err: any) {
+                        console.error('Failed to start conversation:', err);
+                      }
+                    }
+                  }}
+                >
+                  Message
+                </Button>
               </div>
             ))}
           </div>
