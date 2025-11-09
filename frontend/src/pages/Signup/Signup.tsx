@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthService } from '../../services/auth.service';
-import { UserSyncService } from '../../services/user-sync.service';
-import { Button } from '../../components/Button/Button';
 import { Input } from '../../components/Input/Input';
 import { Navigation } from '../../components/Navigation/Navigation';
+import './Signup.css';
 
 export const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -85,25 +84,32 @@ export const Signup: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            <Button type="submit" variant="secondary" disabled={loading} className="btn--full-width">
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="auth-submit-btn"
+            >
               Sign Up
-            </Button>
+            </button>
             {loading && <p className="text-small text-center mt-small" style={{ color: 'var(--text-dark)' }}>Signing up...</p>}
           </form>
 
-          <Button
+          <div className="auth-divider">
+            <span>or</span>
+          </div>
+
+          <button
             type="button"
-            variant="secondary"
             onClick={handleGoogleSignup}
             disabled={loading}
-            className="btn--full-width"
+            className="auth-google-btn"
           >
             Sign up with Google
-          </Button>
+          </button>
           {loading && <p className="text-small text-center mt-small" style={{ color: 'var(--text-dark)' }}>Signing up...</p>}
 
           <p className="text-small text-center mt-large">
-            Already have an account? <Link to="/login" className="link">Sign in</Link>
+            Already have an account? <Link to="/login" className="auth-link">Sign in</Link>
           </p>
         </div>
     </div>

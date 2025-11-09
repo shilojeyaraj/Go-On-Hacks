@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthService } from '../../services/auth.service';
-import { UserSyncService } from '../../services/user-sync.service';
-import { Button } from '../../components/Button/Button';
 import { Input } from '../../components/Input/Input';
 import { Navigation } from '../../components/Navigation/Navigation';
+import './Login.css';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -90,25 +89,32 @@ export const Login: React.FC = () => {
                 Forgot password?
               </Link>
             </div>
-            <Button type="submit" variant="secondary" disabled={loading} className="btn--full-width">
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="auth-submit-btn"
+            >
               Sign In
-            </Button>
+            </button>
             {loading && <p className="text-small text-center mt-small" style={{ color: 'var(--text-dark)' }}>Signing in...</p>}
           </form>
 
-          <Button
+          <div className="auth-divider">
+            <span>or</span>
+          </div>
+
+          <button
             type="button"
-            variant="secondary"
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="btn--full-width"
+            className="auth-google-btn"
           >
             Sign in with Google
-          </Button>
+          </button>
           {loading && <p className="text-small text-center mt-small" style={{ color: 'var(--text-dark)' }}>Signing in...</p>}
 
           <p className="text-small text-center mt-large">
-            Don't have an account? <Link to="/signup" className="link">Sign up</Link>
+            Don't have an account? <Link to="/signup" className="auth-link">Sign up</Link>
           </p>
         </div>
     </div>
