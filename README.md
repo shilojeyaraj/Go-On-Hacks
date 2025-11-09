@@ -28,12 +28,12 @@ ToeGether is a modern dating application that helps users find their perfect mat
 3. Create a `.env` file from the template:
 
    ```powershell
-   Copy-Item ../env.backend .env
+   Copy-Item env.example .env
    ```
 
-   Or manually copy `env.backend` from the root directory to `backend/.env` and update the values.
+   Or manually copy `env.example` to `.env` and update the values with your Firebase credentials.
 
-5. Start the NestJS development server:
+4. Start the NestJS development server:
 
    ```bash
    npm run start:dev
@@ -58,12 +58,12 @@ ToeGether is a modern dating application that helps users find their perfect mat
 3. Create a `.env` file from the template:
 
    ```powershell
-   Copy-Item ../env.frontend .env
+   Copy-Item env.example .env
    ```
 
-   Or manually copy `env.frontend` from the root directory to `frontend/.env` and update the values.
+   Or manually copy `env.example` to `.env` and update the values with your Firebase credentials.
 
-5. Start the React development server:
+4. Start the React development server:
 
    ```bash
    npm start
