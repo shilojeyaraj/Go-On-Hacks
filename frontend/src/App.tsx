@@ -8,6 +8,7 @@ import { Match } from './pages/Match/Match';
 import { Swipe } from './pages/Swipe/Swipe';
 import { Chat } from './pages/Chat/Chat';
 import { Profile } from './pages/Profile/Profile';
+import { Pricing } from './pages/Pricing/Pricing';
 import { ProtectedRoute } from './components/ProtectedRoute/ProtectedRoute';
 import './styles/global.css';
 import './styles/components.css';
@@ -52,6 +53,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/pricing"
+          element={
+            <ProtectedRoute>
+              <Pricing />
             </ProtectedRoute>
           }
         />

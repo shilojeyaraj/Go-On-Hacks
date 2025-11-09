@@ -374,6 +374,12 @@
   line-height: 1.4;
 }
 
+.required-star {
+  color: #dc3545;
+  font-weight: 700;
+  margin-left: 0.25rem;
+}
+
 .preference-chip {
   padding: 0.625rem 1.25rem;
   border-radius: 1.5rem;

@@ -23,6 +23,20 @@ export interface UserProfile {
   careRoutinePreferences?: string[];
   personalNote?: string;
   profileCompleted?: boolean;
+  isPremium?: boolean;
+  subscriptionId?: string;
+  subscriptionStatus?: string;
+  premiumExpiresAt?: string;
+  swipeTracking?: {
+    date: string;
+    count: number;
+  };
+}
+
+export interface SwipeLimit {
+  canSwipe: boolean;
+  remainingSwipes: number;
+  isPremium: boolean;
 }
 
 export interface UpdateProfileData {
@@ -92,6 +106,11 @@ export class UserService {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+  }
+
+  static async getSwipeLimit(): Promise<SwipeLimit> {
+    const response = await api.get('/users/swipe-limit');
+    return response.data;
   }
 }
 

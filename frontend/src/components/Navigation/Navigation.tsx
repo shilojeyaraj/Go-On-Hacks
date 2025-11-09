@@ -58,6 +58,12 @@ export const Navigation: React.FC = () => {
               >
                 Chat
               </Link>
+              <Link
+                to="/pricing"
+              className={`nav-text-link ${location.pathname === '/pricing' ? 'nav-text-link--active' : ''}`}
+              >
+                Pricing
+              </Link>
           </div>
         )}
         <div className="nav-right">

@@ -69,5 +69,10 @@ export class UsersController {
     }
     return user;
   }
+
+  @Get('swipe-limit')
+  async getSwipeLimit(@Request() req) {
+    return this.usersService.canSwipe(req.user.uid);
+  }
 }
 

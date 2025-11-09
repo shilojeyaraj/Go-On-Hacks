@@ -203,6 +203,14 @@ export const Profile: React.FC = () => {
         updateData.bio = bio.trim();
       }
 
+      // Check if there's any data to save
+      if (Object.keys(updateData).length === 0) {
+        setError('Please fill in at least one field before saving');
+        setSaving(false);
+        return;
+      }
+
+      console.log('[Profile] Saving profile data:', Object.keys(updateData));
       const updatedUser = await UserService.updateProfile(updateData);
       setUser(updatedUser);
       
@@ -344,6 +352,9 @@ export const Profile: React.FC = () => {
           {activeTab === 'profile' && (
             <div className="profile-form">
               <div className="profile-section profile-section--picture">
+                <h3 className="text-subheading">
+                  Profile Picture <span className="required-star">*</span>
+                </h3>
                 <div className="profile-picture-wrapper">
                   <div className="profile-picture-container">
                     {profilePicture ? (
@@ -394,7 +405,9 @@ export const Profile: React.FC = () => {
               </div>
 
               <div className="profile-section profile-section--feet-photos">
-                <h3 className="text-subheading">Feet Photos</h3>
+                <h3 className="text-subheading">
+                  Feet Photos <span className="required-star">*</span>
+                </h3>
                 <p className="text-small" style={{ marginBottom: '0.75rem' }}>Upload at least 1 photo of your feet</p>
                 <div className="feet-photos-grid">
                   {feetPhotos.map((photo, index) => (
@@ -447,7 +460,9 @@ export const Profile: React.FC = () => {
               </div>
 
               <div className="profile-section profile-section--full-name">
-                <h3 className="text-subheading">Full Name</h3>
+                <h3 className="text-subheading">
+                  Full Name <span className="required-star">*</span>
+                </h3>
                 <Input
                   type="text"
                   label=""
