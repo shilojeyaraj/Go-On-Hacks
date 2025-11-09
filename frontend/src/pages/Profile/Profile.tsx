@@ -9,13 +9,49 @@ import './Profile.css';
 type TabType = 'profile' | 'preferences';
 
 const ARCH_TYPES = ['High', 'Medium', 'Low', 'Flat'];
+const ARCH_SIZES = ['Small', 'Medium', 'Large', 'Extra Large'];
+const AGE_CATEGORIES = ['Googgoogaga', 'Underage', 'Middle Aged', 'Have Grandchildren'];
 const FAMILY_STATUSES = [
+  'Minor',
   'Underage Mom',
   'Divorced Mom',
-  'Mom',
   'Divorced Dad',
-  'Dad',
-  'Other'
+  'Engaged'
+];
+
+const FOOT_FEEL_PREFERENCES = [
+  'Ticklish',
+  'Loves Pressure',
+  'Light Touch',
+  'No Contact'
+];
+
+const AESTHETIC_PREFERENCES = [
+  'Glitter Toes',
+  'Painted Nails',
+  'Minimalist Look',
+  'Foot Jewelry'
+];
+
+const TOE_ACTIVITY_PREFERENCES = [
+  'Licking',
+  'Massaging',
+  'Staring',
+  'Swallowing'
+];
+
+const FOOT_PERSONALITY_PREFERENCES = [
+  'Introverted',
+  'Extroverted Arch',
+  'Chaotic Heel',
+  'Naughty'
+];
+
+const CARE_ROUTINE_PREFERENCES = [
+  'Daily Moisturizer',
+  'Spa Treat',
+  'Natural Raw',
+  'Aloe Only'
 ];
 
 export const Profile: React.FC = () => {
@@ -37,9 +73,17 @@ export const Profile: React.FC = () => {
   const [archType, setArchType] = useState('');
   const [archSize, setArchSize] = useState('');
   const [age, setAge] = useState('');
+  const [ageCategory, setAgeCategory] = useState('');
   const [familyStatus, setFamilyStatus] = useState('');
   const [preferredArchTypes, setPreferredArchTypes] = useState<string[]>([]);
   const [preferredArchSizes, setPreferredArchSizes] = useState<string[]>([]);
+  const [footFeelPreferences, setFootFeelPreferences] = useState<string[]>([]);
+  const [aestheticPreferences, setAestheticPreferences] = useState<string[]>([]);
+  const [toeActivityPreferences, setToeActivityPreferences] = useState<string[]>([]);
+  const [footPersonalityPreferences, setFootPersonalityPreferences] = useState<string[]>([]);
+  const [careRoutinePreferences, setCareRoutinePreferences] = useState<string[]>([]);
+  const [personalNote, setPersonalNote] = useState('');
+  const [showAdditionalPreferences, setShowAdditionalPreferences] = useState(false);
 
   const profileFileInputRef = useRef<HTMLInputElement>(null);
   const feetFileInputRef = useRef<HTMLInputElement>(null);
@@ -49,6 +93,12 @@ export const Profile: React.FC = () => {
       loadUserProfile();
     }
   }, [firebaseUser]);
+
+  useEffect(() => {
+    // Clear messages when switching tabs
+    setError('');
+    setSuccess('');
+  }, [activeTab]);
 
   const loadUserProfile = async () => {
     try {
@@ -68,9 +118,15 @@ export const Profile: React.FC = () => {
       setArchType(userData.archType || '');
       setArchSize(userData.archSize || '');
       setAge(userData.age ? String(userData.age) : '');
+      setAgeCategory(userData.ageCategory || '');
       setFamilyStatus(userData.familyStatus || '');
       setPreferredArchTypes(userData.preferredArchTypes || []);
       setPreferredArchSizes(userData.preferredArchSizes || []);
+      setFootFeelPreferences(userData.footFeelPreferences || []);
+      setAestheticPreferences(userData.aestheticPreferences || []);
+      setToeActivityPreferences(userData.toeActivityPreferences || []);
+      setFootPersonalityPreferences(userData.footPersonalityPreferences || []);
+      setCareRoutinePreferences(userData.careRoutinePreferences || []);
     } catch (err: any) {
       // Only show error if it's not empty (404 errors are silenced)
       const errorMessage = err.message || '';
@@ -186,9 +242,16 @@ export const Profile: React.FC = () => {
         archType: archType || undefined,
         archSize: archSize || undefined,
         age: age ? (age.trim() ? Number(age) : undefined) : undefined,
+        ageCategory: ageCategory || undefined,
         familyStatus: familyStatus || undefined,
         preferredArchTypes,
         preferredArchSizes,
+        footFeelPreferences,
+        aestheticPreferences,
+        toeActivityPreferences,
+        footPersonalityPreferences,
+        careRoutinePreferences,
+        personalNote: personalNote.trim() || undefined,
       };
 
       const updatedUser = await UserService.updatePreferences(updateData);
@@ -275,36 +338,15 @@ export const Profile: React.FC = () => {
 
         <div className="profile-content">
           {error && <div className="error-message">{error}</div>}
-          {success && <div className="success-message">{success}</div>}
 
           {activeTab === 'profile' && (
             <div className="profile-form">
               <div className="profile-section profile-section--picture">
-                <h2 className="text-heading">Profile Picture</h2>
                 <div className="profile-picture-wrapper">
                   <div className="profile-picture-container">
                     {profilePicture ? (
                       <div className="profile-picture-preview">
                         <img src={profilePicture} alt="Profile" />
-                        <div className="profile-picture-overlay">
-                          <button
-                            className="profile-picture-upload-btn"
-                            onClick={() => profileFileInputRef.current?.click()}
-                            title="Change picture"
-                          >
-                            Change
-                          </button>
-                          <button
-                            className="profile-picture-remove-btn"
-                            onClick={() => {
-                              const defaultPhoto = firebaseUser?.photoURL || null;
-                              setProfilePicture(defaultPhoto);
-                            }}
-                            title="Remove custom picture"
-                          >
-                            Remove
-                          </button>
-                        </div>
                       </div>
                     ) : (
                       <div className="profile-picture-placeholder">
@@ -317,15 +359,6 @@ export const Profile: React.FC = () => {
                              'U'}
                           </div>
                         )}
-                        <div className="profile-picture-overlay">
-                          <button
-                            className="profile-picture-upload-btn"
-                            onClick={() => profileFileInputRef.current?.click()}
-                            title="Upload picture"
-                          >
-                            Upload
-                          </button>
-                        </div>
                       </div>
                     )}
                     <input
@@ -337,11 +370,30 @@ export const Profile: React.FC = () => {
                     />
                   </div>
                 </div>
+                <div className="profile-picture-actions">
+                  <Button
+                    variant="secondary"
+                    onClick={() => profileFileInputRef.current?.click()}
+                  >
+                    {profilePicture ? 'Change' : 'Upload'}
+                  </Button>
+                  {profilePicture && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        const defaultPhoto = firebaseUser?.photoURL || null;
+                        setProfilePicture(defaultPhoto);
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <div className="profile-section">
-                <h2 className="text-heading">Feet Photos</h2>
-                <p className="text-small">Upload at least 1 photo of your feet</p>
+                <h3 className="text-subheading">Feet Photos</h3>
+                <p className="text-small" style={{ marginBottom: '0.75rem' }}>Upload at least 1 photo of your feet</p>
                 <div className="feet-photos-grid">
                   {feetPhotos.map((photo, index) => (
                     <div key={index} className="feet-photo-item">
@@ -393,9 +445,10 @@ export const Profile: React.FC = () => {
               </div>
 
               <div className="profile-section">
+                <h3 className="text-subheading">Full Name</h3>
                 <Input
                   type="text"
-                  label="Full Name"
+                  label=""
                   placeholder="Enter your full name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
@@ -403,7 +456,7 @@ export const Profile: React.FC = () => {
               </div>
 
               <div className="profile-section">
-                <label className="input-label">Bio</label>
+                <h3 className="text-subheading">Bio</h3>
                 <textarea
                   className="input input--textarea"
                   placeholder="Tell us about yourself..."
@@ -421,6 +474,7 @@ export const Profile: React.FC = () => {
               >
                 {saving ? 'Saving...' : 'Save Profile'}
               </Button>
+              {success && <div className="profile-success-text">{success}</div>}
             </div>
           )}
 
@@ -428,62 +482,88 @@ export const Profile: React.FC = () => {
             <div className="profile-form">
               <div className="profile-section">
                 <h2 className="text-heading">Your Arch Information</h2>
-                <div className="profile-section-row">
-                  <div className="profile-section-col">
+                <div className="profile-section-column">
+                  <div className="profile-section-field">
                     <label className="input-label">Arch Type</label>
-                    <select
-                      className="input"
-                      value={archType}
-                      onChange={(e) => setArchType(e.target.value)}
-                    >
-                      <option value="">Select arch type</option>
+                    <div className="radio-group">
                       {ARCH_TYPES.map(type => (
-                        <option key={type} value={type}>{type}</option>
+                        <label key={type} className="radio-option">
+                          <input
+                            type="radio"
+                            name="archType"
+                            value={type}
+                            checked={archType === type}
+                            onChange={(e) => setArchType(e.target.value)}
+                          />
+                          <span className="radio-label">{type}</span>
+                        </label>
                       ))}
-                    </select>
+                    </div>
                   </div>
-                  <div className="profile-section-col">
-                    <Input
-                      type="text"
-                      label="Arch Size"
-                      placeholder="Enter arch size"
-                      value={archSize}
-                      onChange={(e) => setArchSize(e.target.value)}
-                    />
+                  <div className="profile-section-field">
+                    <label className="input-label">Arch Size</label>
+                    <div className="radio-group">
+                      {ARCH_SIZES.map(size => (
+                        <label key={size} className="radio-option">
+                          <input
+                            type="radio"
+                            name="archSize"
+                            value={size}
+                            checked={archSize === size}
+                            onChange={(e) => setArchSize(e.target.value)}
+                          />
+                          <span className="radio-label">{size}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div className="profile-section">
                 <h2 className="text-heading">Personal Information</h2>
-                <div className="profile-section-row">
-                  <div className="profile-section-col">
-                    <Input
-                      type="number"
-                      label="Age"
-                      placeholder="Enter your age"
-                      value={age}
-                      onChange={(e) => setAge(e.target.value)}
-                    />
-                  </div>
-                  <div className="profile-section-col">
-                    <label className="input-label">Family Status</label>
-                    <select
-                      className="input"
-                      value={familyStatus}
-                      onChange={(e) => setFamilyStatus(e.target.value)}
-                    >
-                      <option value="">Select family status</option>
-                      {FAMILY_STATUSES.map(status => (
-                        <option key={status} value={status}>{status}</option>
+                <div className="profile-section-column">
+                  <div className="profile-section-field">
+                    <label className="input-label">Age</label>
+                    <div className="radio-group">
+                      {AGE_CATEGORIES.map(category => (
+                        <label key={category} className="radio-option">
+                          <input
+                            type="radio"
+                            name="ageCategory"
+                            value={category}
+                            checked={ageCategory === category}
+                            onChange={(e) => setAgeCategory(e.target.value)}
+                          />
+                          <span className="radio-label">{category}</span>
+                        </label>
                       ))}
-                    </select>
+                    </div>
+                  </div>
+                  <div className="profile-section-field">
+                    <label className="input-label">Family Status</label>
+                    <div className="radio-group">
+                      {FAMILY_STATUSES.map(status => (
+                        <label key={status} className="radio-option">
+                          <input
+                            type="radio"
+                            name="familyStatus"
+                            value={status}
+                            checked={familyStatus === status}
+                            onChange={(e) => setFamilyStatus(e.target.value)}
+                          />
+                          <span className="radio-label">{status}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
 
+              <h2 className="text-heading" style={{ marginTop: '0', marginBottom: '1.5rem' }}>Preferences</h2>
+
               <div className="profile-section">
-                <h2 className="text-heading">Preferred Arch Types</h2>
+                <h3 className="text-subheading">Preferred Arch Types</h3>
                 <div className="preferences-chips">
                   {ARCH_TYPES.map(type => (
                     <button
@@ -498,45 +578,158 @@ export const Profile: React.FC = () => {
               </div>
 
               <div className="profile-section">
-                <h2 className="text-heading">Preferred Arch Sizes</h2>
-                <div className="preferred-sizes-container">
-                  <div className="preferred-sizes-input">
-                    <Input
-                      type="text"
-                      label="Add Size"
-                      placeholder="Enter arch size"
-                      value={archSize}
-                      onChange={(e) => setArchSize(e.target.value)}
-                      onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          addPreferredArchSize();
+                <h3 className="text-subheading">Preferred Arch Sizes</h3>
+                <div className="preferences-chips">
+                  {ARCH_SIZES.map(size => (
+                    <button
+                      key={size}
+                      className={`preference-chip ${preferredArchSizes.includes(size) ? 'preference-chip--active' : ''}`}
+                      onClick={() => {
+                        if (preferredArchSizes.includes(size)) {
+                          setPreferredArchSizes(preferredArchSizes.filter(s => s !== size));
+                        } else {
+                          setPreferredArchSizes([...preferredArchSizes, size]);
                         }
                       }}
-                    />
-                    <Button
-                      variant="secondary"
-                      onClick={addPreferredArchSize}
-                      className="add-size-btn"
                     >
-                      Add
-                    </Button>
-                  </div>
-                  <div className="preferred-sizes-list">
-                    {preferredArchSizes.map((size, index) => (
-                      <div key={index} className="preferred-size-chip">
-                        {size}
-                        <button
-                          className="preferred-size-remove"
-                          onClick={() => removePreferredArchSize(size)}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                      {size}
+                    </button>
+                  ))}
                 </div>
               </div>
+
+              <div className="profile-section">
+                <button
+                  type="button"
+                  className="additional-preferences-toggle"
+                  onClick={() => setShowAdditionalPreferences(!showAdditionalPreferences)}
+                >
+                  <span>Additional Preferences</span>
+                  <span className={`toggle-icon ${showAdditionalPreferences ? 'toggle-icon--open' : ''}`}>
+                    ▼
+                  </span>
+                </button>
+              </div>
+
+              {showAdditionalPreferences && (
+                <>
+              <div className="profile-section">
+                <h3 className="text-subheading">Foot Feel</h3>
+                <div className="preferences-chips">
+                  {FOOT_FEEL_PREFERENCES.map(pref => (
+                    <button
+                      key={pref}
+                      className={`preference-chip ${footFeelPreferences.includes(pref) ? 'preference-chip--active' : ''}`}
+                      onClick={() => {
+                        if (footFeelPreferences.includes(pref)) {
+                          setFootFeelPreferences(footFeelPreferences.filter(p => p !== pref));
+                        } else {
+                          setFootFeelPreferences([...footFeelPreferences, pref]);
+                        }
+                      }}
+                    >
+                      {pref}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="profile-section">
+                <h3 className="text-subheading">Aesthetic</h3>
+                <div className="preferences-chips">
+                  {AESTHETIC_PREFERENCES.map(pref => (
+                    <button
+                      key={pref}
+                      className={`preference-chip ${aestheticPreferences.includes(pref) ? 'preference-chip--active' : ''}`}
+                      onClick={() => {
+                        if (aestheticPreferences.includes(pref)) {
+                          setAestheticPreferences(aestheticPreferences.filter(p => p !== pref));
+                        } else {
+                          setAestheticPreferences([...aestheticPreferences, pref]);
+                        }
+                      }}
+                    >
+                      {pref}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="profile-section">
+                <h3 className="text-subheading">Toe Activity</h3>
+                <div className="preferences-chips">
+                  {TOE_ACTIVITY_PREFERENCES.map(pref => (
+                    <button
+                      key={pref}
+                      className={`preference-chip ${toeActivityPreferences.includes(pref) ? 'preference-chip--active' : ''}`}
+                      onClick={() => {
+                        if (toeActivityPreferences.includes(pref)) {
+                          setToeActivityPreferences(toeActivityPreferences.filter(p => p !== pref));
+                        } else {
+                          setToeActivityPreferences([...toeActivityPreferences, pref]);
+                        }
+                      }}
+                    >
+                      {pref}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="profile-section">
+                <h3 className="text-subheading">Foot Personality</h3>
+                <div className="preferences-chips">
+                  {FOOT_PERSONALITY_PREFERENCES.map(pref => (
+                    <button
+                      key={pref}
+                      className={`preference-chip ${footPersonalityPreferences.includes(pref) ? 'preference-chip--active' : ''}`}
+                      onClick={() => {
+                        if (footPersonalityPreferences.includes(pref)) {
+                          setFootPersonalityPreferences(footPersonalityPreferences.filter(p => p !== pref));
+                        } else {
+                          setFootPersonalityPreferences([...footPersonalityPreferences, pref]);
+                        }
+                      }}
+                    >
+                      {pref}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="profile-section">
+                <h3 className="text-subheading">Care Routine</h3>
+                <div className="preferences-chips">
+                  {CARE_ROUTINE_PREFERENCES.map(pref => (
+                    <button
+                      key={pref}
+                      className={`preference-chip ${careRoutinePreferences.includes(pref) ? 'preference-chip--active' : ''}`}
+                      onClick={() => {
+                        if (careRoutinePreferences.includes(pref)) {
+                          setCareRoutinePreferences(careRoutinePreferences.filter(p => p !== pref));
+                        } else {
+                          setCareRoutinePreferences([...careRoutinePreferences, pref]);
+                        }
+                      }}
+                    >
+                      {pref}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="profile-section">
+                <h3 className="text-subheading">Personal Note</h3>
+                <textarea
+                  className="input input--textarea"
+                  placeholder="Write your own note..."
+                  value={personalNote}
+                  onChange={(e) => setPersonalNote(e.target.value)}
+                  rows={4}
+                />
+              </div>
+                </>
+              )}
 
               <Button
                 variant="primary"
@@ -546,6 +739,7 @@ export const Profile: React.FC = () => {
               >
                 {saving ? 'Saving...' : 'Save Preferences'}
               </Button>
+              {success && <div className="profile-success-text">{success}</div>}
             </div>
           )}
         </div>

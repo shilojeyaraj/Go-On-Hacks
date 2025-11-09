@@ -34,6 +34,10 @@ export class UpdatePreferencesDto {
 
   @IsOptional()
   @IsString()
+  ageCategory?: string;
+
+  @IsOptional()
+  @IsString()
   familyStatus?: string;
 
   @IsOptional()
@@ -45,5 +49,40 @@ export class UpdatePreferencesDto {
   @IsArray()
   @IsString({ each: true })
   preferredArchSizes?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  footFeelPreferences?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  aestheticPreferences?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  toeActivityPreferences?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  footPersonalityPreferences?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  careRoutinePreferences?: string[];
+
+  @IsOptional()
+  @IsString()
+  personalNote?: string;
 }
+
+
+
+
+
+
 

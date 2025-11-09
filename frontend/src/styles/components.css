@@ -38,9 +38,9 @@
 }
 
 .btn--secondary:hover:not(:disabled) {
-  background-color: rgba(148, 0, 0, 0.15);
-  color: white;
-  border-color: rgba(148, 0, 0, 0.15);
+  background-color: rgba(148, 0, 0, 0.1);
+  color: var(--text-dark);
+  border-color: var(--color-red-dark);
 }
 
 .btn--secondary:active {
