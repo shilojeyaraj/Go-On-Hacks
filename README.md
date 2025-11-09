@@ -28,19 +28,10 @@ ToeGether is a modern dating application that helps users find their perfect mat
 3. Create a `.env` file from the template:
 
    ```powershell
-   Copy-Item env.template .env
+   Copy-Item ../env.backend .env
    ```
 
-4. Edit the `.env` file and add your configuration:
-
-   ```env
-   PORT=3000
-   MONGODB_URI=mongodb://localhost:27017/ToeGether
-   FRONTEND_URL=http://localhost:3001
-   FB_PROJECT_ID=your_project_id
-   FB_CLIENT_EMAIL=your_client_email@your_project.iam.gserviceaccount.com
-   FB_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-   ```
+   Or manually copy `env.backend` from the root directory to `backend/.env` and update the values.
 
 5. Start the NestJS development server:
 
@@ -67,21 +58,10 @@ ToeGether is a modern dating application that helps users find their perfect mat
 3. Create a `.env` file from the template:
 
    ```powershell
-   Copy-Item env.example .env
+   Copy-Item ../env.frontend .env
    ```
 
-4. Edit the `.env` file and add your Firebase configuration:
-
-   ```env
-   PORT=3001
-   REACT_APP_API_URL=http://localhost:3000
-   REACT_APP_FIREBASE_API_KEY=your_api_key
-   REACT_APP_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
-   REACT_APP_FIREBASE_PROJECT_ID=your_project_id
-   REACT_APP_FIREBASE_STORAGE_BUCKET=your_project_id.firebasestorage.app
-   REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-   REACT_APP_FIREBASE_APP_ID=your_app_id
-   ```
+   Or manually copy `env.frontend` from the root directory to `frontend/.env` and update the values.
 
 5. Start the React development server:
 
