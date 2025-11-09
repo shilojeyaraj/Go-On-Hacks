@@ -34,6 +34,8 @@ export class UsersController {
 
   @Put('me/profile')
   async updateProfile(@Request() req, @Body() updateDto: UpdateProfileDto) {
+    console.log(`[Controller] Profile update request from UID: ${req.user.uid}`);
+    console.log(`[Controller] Update data keys:`, Object.keys(updateDto));
     return this.usersService.updateProfile(req.user.uid, updateDto);
   }
 

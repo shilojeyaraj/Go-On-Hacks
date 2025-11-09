@@ -223,9 +223,13 @@ export const Profile: React.FC = () => {
       
       setSuccess('Profile saved successfully!');
     } catch (err: any) {
+      console.error('Profile save error:', err);
       const errorMessage = err.message || '';
-      if (errorMessage && !errorMessage.includes('404')) {
+      // Show all errors, including network errors
+      if (errorMessage) {
         setError(errorMessage || 'Failed to save profile');
+      } else {
+        setError('Failed to save profile. Please check your connection and try again.');
       }
     } finally {
       setSaving(false);
