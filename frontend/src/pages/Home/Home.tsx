@@ -93,18 +93,19 @@ export const Home: React.FC = () => {
             
             <div className="home-benefits-list">
               {BENEFITS.map((benefit, index) => (
-                <React.Fragment key={index}>
-                  <div className="home-benefit-item">
-                    <div className="home-benefit-bullet">👣</div>
-                    <div className="home-benefit-content">
-                      <h3 className="home-benefit-title">{benefit.title}</h3>
-                      <p className="home-benefit-description">{benefit.description}</p>
-                    </div>
+                <div key={index} className="home-benefit-item">
+                  <div className="home-benefit-bullet">👣</div>
+                  <div className="home-benefit-content">
+                    <h3 className="home-benefit-title">{benefit.title}</h3>
+                    <p className="home-benefit-description">{benefit.description}</p>
                   </div>
                   {index < BENEFITS.length - 1 && (
                     <div className="home-benefit-connector"></div>
                   )}
-                </React.Fragment>
+                  {index === BENEFITS.length - 1 && (
+                    <div className="home-benefit-connector home-benefit-connector--final"></div>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -113,18 +114,18 @@ export const Home: React.FC = () => {
         {/* Call to Action Section */}
         <section className="home-cta-section">
           <div className="home-cta-content">
-            <h2 className="home-cta-heading">Ready to Find Your Sole Mate?</h2>
+            <h2 className="home-cta-heading">Ready to Step Into Something Special?</h2>
             <p className="home-cta-text">
-              Join thousands of feet enthusiasts on ToeGether. Your perfect match is waiting!
+              Connect with feet enthusiasts who share your passion. Your perfect match is just a step away.
             </p>
             <Button 
               onClick={() => navigate('/signup')} 
               variant="primary"
               className="home-cta-final-button"
             >
-              Join ToeGether Today
+              Get Started
             </Button>
-            <p className="home-cta-subtext">Free to sign up • Start connecting instantly</p>
+            <p className="home-cta-subtext">Free to join • Start matching today</p>
           </div>
         </section>
       </div>
