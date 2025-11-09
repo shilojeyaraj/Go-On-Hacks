@@ -16,19 +16,8 @@ export class GestureService {
    * @param sequence Array of frames, each frame has 9 features [3 vertical_y, 3 horizontal_x, 3 vertical_z]
    */
   static async predictGesture(sequence: number[][]): Promise<GestureResult> {
-    console.log('[GestureService] Starting gesture prediction request');
-    console.log('[GestureService] Sequence length:', sequence?.length);
-    console.log('[GestureService] First frame features:', sequence?.[0]?.length);
-    console.log('[GestureService] Sample frame data:', sequence?.[0]?.slice(0, 3));
-    
     try {
       const response = await api.post('/gestures/predict', { sequence });
-      console.log('[GestureService] Response received:', {
-        success: response.data.success,
-        gesture: response.data.gesture,
-        confidence: response.data.confidence,
-        probabilities: response.data.probabilities,
-      });
       
       if (!response.data.success) {
         console.error('[GestureService] Prediction failed:', response.data.error);
@@ -41,7 +30,6 @@ export class GestureService {
         probabilities: response.data.probabilities,
       };
       
-      console.log('[GestureService] ✅ Prediction successful:', result);
       return result;
     } catch (error: any) {
       console.error('[GestureService] ❌ Request failed:', error.message);
