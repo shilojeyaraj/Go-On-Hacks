@@ -1,383 +1,387 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Navigation } from '../../components/Navigation/Navigation';
-import { api } from '../../shared/api';
+import { UserService, UserProfile } from '../../services/user.service';
+import { ChatService } from '../../services/chat.service';
+import { useAuthUser } from '../../hooks/useAuthUser';
+import { useNavigate, Link } from 'react-router-dom';
+import { Button } from '../../components/Button/Button';
 import './Swipe.css';
 
-// Note: MediaPipe will be loaded via CDN script tag
-declare global {
-  interface Window {
-    FaceMesh: any;
-    Camera: any;
-  }
-}
-
-interface GestureResult {
-  gesture: 'YES' | 'NO' | 'NEUTRAL';
-  confidence: number;
-  probabilities: {
-    YES: number;
-    NO: number;
-    NEUTRAL: number;
-  };
-}
-
 export const Swipe: React.FC = () => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isActive, setIsActive] = useState(false);
-  const [gestureResult, setGestureResult] = useState<GestureResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [bufferStatus, setBufferStatus] = useState(0);
+  const { user } = useAuthUser();
+  const navigate = useNavigate();
+  const [profiles, setProfiles] = useState<UserProfile[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [swiping, setSwiping] = useState(false);
+  const [showMatchModal, setShowMatchModal] = useState(false);
+  const [matchedUser, setMatchedUser] = useState<UserProfile | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   
-  const frameBufferRef = useRef<number[][]>([]);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
-  const faceMeshRef = useRef<any>(null);
+  // Drag/swipe state
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
-  const SEQUENCE_LENGTH = 15;
-  const PREDICTION_INTERVAL = 500; // Predict every 500ms
-  const lastPredictionTime = useRef<number>(0);
-
-  // Initialize MediaPipe Face Mesh
   useEffect(() => {
-    const loadMediaPipe = () => {
-      // Load MediaPipe from CDN
-      if (window.FaceMesh) {
-        const faceMesh = new window.FaceMesh({
-          locateFile: (file: string) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
-          },
-        });
+    checkProfileAndLoadProfiles();
+  }, [user]);
 
-        faceMesh.setOptions({
-          maxNumFaces: 1,
-          refineLandmarks: true,
-          minDetectionConfidence: 0.5,
-          minTrackingConfidence: 0.5,
-        });
+  // Handle mouse move globally for better drag experience
+  useEffect(() => {
+    if (!isDragging) return;
 
-        faceMeshRef.current = faceMesh;
-      } else {
-        // Load script if not already loaded
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh';
-        script.onload = () => {
-          if (window.FaceMesh) {
-            const faceMesh = new window.FaceMesh({
-              locateFile: (file: string) => {
-                return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
-              },
-            });
-
-            faceMesh.setOptions({
-              maxNumFaces: 1,
-              refineLandmarks: true,
-              minDetectionConfidence: 0.5,
-              minTrackingConfidence: 0.5,
-            });
-
-            faceMeshRef.current = faceMesh;
-          }
-        };
-        script.onerror = () => {
-          setError('Failed to load MediaPipe. Please check your internet connection.');
-        };
-        document.head.appendChild(script);
-      }
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - dragStart.x;
+      const deltaY = e.clientY - dragStart.y;
+      setDragOffset({ x: deltaX, y: deltaY });
     };
 
-    loadMediaPipe();
-  }, []);
+    document.addEventListener('mousemove', handleGlobalMouseMove);
 
-  // Extract landmarks from frame (matching training extraction)
-  const extractLandmarks = useCallback((results: any): number[] | null => {
-    if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
-      return null;
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+    };
+  }, [isDragging, dragStart]);
+
+  const checkProfileAndLoadProfiles = async () => {
+    try {
+      setLoading(true);
+      
+      // Check if current user has completed profile
+      const userData = await UserService.getCurrentUser();
+      setCurrentUser(userData);
+
+      if (!userData.profileCompleted) {
+        return;
+      }
+
+      // Load discoverable profiles (users not yet swiped on)
+      const discoverProfiles = await UserService.getDiscoverProfiles();
+      setProfiles(discoverProfiles);
+    } catch (err: any) {
+      console.error('Failed to load profiles:', err);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const faceLandmarks = results.multiFaceLandmarks[0];
-    
-    // Vertical landmarks (YES - nodding): 1 (nose), 10 (forehead), 152 (chin)
-    const verticalLandmarks = [1, 10, 152];
-    
-    // Horizontal landmarks (NO - shaking): 1 (nose), 33 (left eye), 263 (right eye)
-    const horizontalLandmarks = [1, 33, 263];
+  const handleSwipe = async (action: 'like' | 'pass') => {
+    if (swiping || currentIndex >= profiles.length || swipeDirection) return;
 
-    const verticalPositions: number[][] = [];
-    const horizontalPositions: number[][] = [];
+    const currentProfile = profiles[currentIndex];
+    if (!currentProfile || !user?.uid) return;
 
-    verticalLandmarks.forEach((idx) => {
-      const landmark = faceLandmarks[idx];
-      verticalPositions.push([landmark.x, landmark.y, landmark.z]);
-    });
-
-    horizontalLandmarks.forEach((idx) => {
-      const landmark = faceLandmarks[idx];
-      horizontalPositions.push([landmark.x, landmark.y, landmark.z]);
-    });
-
-    // Compute movement-focused features (matching training)
-    const features: number[] = [];
-    
-    // Vertical movement features (YES - up/down motion)
-    verticalPositions.forEach((pos) => features.push(pos[1])); // y-coordinates
-    
-    // Horizontal movement features (NO - left/right motion)
-    horizontalPositions.forEach((pos) => features.push(pos[0])); // x-coordinates
-    
-    // Add z-coordinates for depth
-    verticalPositions.forEach((pos) => features.push(pos[2])); // z-coordinates
-
-    return features; // 9 features total
-  }, []);
-
-  // Predict gesture from buffer
-  const predictGesture = useCallback(async (sequence: number[][]) => {
-    if (sequence.length !== SEQUENCE_LENGTH) {
-      return;
-    }
+    // Set swipe direction for animation
+    setSwipeDirection(action === 'like' ? 'right' : 'left');
 
     try {
-      const response = await api.post<{ success: boolean; error?: string } & Partial<GestureResult>>('/gestures/predict', {
-        sequence,
-      });
+      setSwiping(true);
+      const result = await UserService.swipe(currentProfile.uid, action);
 
-      if (response.data.success && response.data.gesture) {
-        setGestureResult({
-          gesture: response.data.gesture,
-          confidence: response.data.confidence!,
-          probabilities: response.data.probabilities!,
-        });
-        setError(null);
-      } else {
-        setError(response.data.error || 'Prediction failed');
+      if (result.isMatch && action === 'like') {
+        // It's a match! Show match modal after animation
+        setTimeout(() => {
+          setMatchedUser(currentProfile);
+          setShowMatchModal(true);
+        }, 300);
       }
+
+      // Move to next profile after animation completes
+      setTimeout(() => {
+        setCurrentIndex(prev => prev + 1);
+        setSwipeDirection(null);
+        setDragOffset({ x: 0, y: 0 });
+      }, 600);
     } catch (err: any) {
-      console.error('Prediction error:', err);
-      setError(err.response?.data?.error || 'Failed to predict gesture');
+      console.error('Failed to swipe:', err);
+      setSwipeDirection(null);
+      alert(err.response?.data?.message || 'Failed to swipe. Please try again.');
+    } finally {
+      setSwiping(false);
     }
-  }, []);
+  };
 
-  // Process video frame
-  const processFrame = useCallback(
-    (video: HTMLVideoElement, canvas: HTMLCanvasElement) => {
-      if (!faceMeshRef.current) return;
+  // Mouse drag handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (swiping || swipeDirection) return;
+    setIsDragging(true);
+    setDragStart({ x: e.clientX, y: e.clientY });
+  };
 
-      const now = Date.now();
+  const handleMouseUp = () => {
+    if (!isDragging) return;
+    const finalOffset = dragOffset;
+    setIsDragging(false);
 
-      faceMeshRef.current.onResults((results: any) => {
-        // Draw face mesh on canvas
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.save();
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
-
-          if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-            // Draw face landmarks
-            const faceLandmarks = results.multiFaceLandmarks[0];
-            ctx.strokeStyle = '#00FF00';
-            ctx.lineWidth = 1;
-            for (const landmark of faceLandmarks) {
-              ctx.beginPath();
-              ctx.arc(
-                landmark.x * canvas.width,
-                landmark.y * canvas.height,
-                2,
-                0,
-                2 * Math.PI,
-              );
-              ctx.stroke();
-            }
-          }
-          ctx.restore();
-        }
-
-        // Extract landmarks
-        const features = extractLandmarks(results);
-        if (features) {
-          frameBufferRef.current.push(features);
-
-          // Keep buffer at sequence length
-          if (frameBufferRef.current.length > SEQUENCE_LENGTH) {
-            frameBufferRef.current.shift();
-          }
-
-          // Update buffer status
-          const bufferPercent = Math.min(
-            100,
-            (frameBufferRef.current.length / SEQUENCE_LENGTH) * 100,
-          );
-          setBufferStatus(bufferPercent);
-
-          // Predict when buffer is full and enough time has passed
-          if (
-            frameBufferRef.current.length === SEQUENCE_LENGTH &&
-            now - lastPredictionTime.current >= PREDICTION_INTERVAL
-          ) {
-            lastPredictionTime.current = now;
-            predictGesture([...frameBufferRef.current]);
-          }
-        }
-      });
-
-      faceMeshRef.current.send({ image: video });
-    },
-    [extractLandmarks, predictGesture],
-  );
-
-  // Start/stop webcam
-  const toggleWebcam = useCallback(async () => {
-    if (isActive) {
-      // Stop
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
-        mediaStreamRef.current = null;
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      frameBufferRef.current = [];
-      setBufferStatus(0);
-      setIsActive(false);
+    // If dragged far enough, trigger swipe
+    if (Math.abs(finalOffset.x) > 150) {
+      handleSwipe(finalOffset.x > 0 ? 'like' : 'pass');
     } else {
-      // Start
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 1280, height: 720 },
-        });
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          mediaStreamRef.current = stream;
-          setIsActive(true);
-          setError(null);
-
-          // Start processing frames
-          const process = () => {
-            if (videoRef.current && canvasRef.current && isActive) {
-              processFrame(videoRef.current, canvasRef.current);
-              animationFrameRef.current = requestAnimationFrame(process);
-            }
-          };
-          process();
-        }
-      } catch (err: any) {
-        console.error('Error accessing webcam:', err);
-        setError('Failed to access webcam. Please allow camera permissions.');
-      }
+      // Reset if not dragged far enough
+      setDragOffset({ x: 0, y: 0 });
     }
-  }, [isActive, processFrame]);
+  };
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, []);
+  // Touch handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (swiping || swipeDirection) return;
+    setIsDragging(true);
+    setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+  };
 
-  const getGestureColor = (gesture: string) => {
-    switch (gesture) {
-      case 'YES':
-        return '#00FF00'; // Green
-      case 'NO':
-        return '#FF0000'; // Red
-      case 'NEUTRAL':
-        return '#00FFFF'; // Cyan
-      default:
-        return '#FFFFFF';
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || swiping || swipeDirection) return;
+    const deltaX = e.touches[0].clientX - dragStart.x;
+    const deltaY = e.touches[0].clientY - dragStart.y;
+    setDragOffset({ x: deltaX, y: deltaY });
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+
+    // If dragged far enough, trigger swipe
+    if (Math.abs(dragOffset.x) > 150) {
+      handleSwipe(dragOffset.x > 0 ? 'like' : 'pass');
+    } else {
+      // Reset if not dragged far enough
+      setDragOffset({ x: 0, y: 0 });
     }
+  };
+
+  const handleMatchModalClose = () => {
+    setShowMatchModal(false);
+    setMatchedUser(null);
+  };
+
+  const handleSendMessage = async () => {
+    if (!matchedUser || !user?.uid) return;
+
+    try {
+      // Get or create conversation (should already exist from backend)
+      await ChatService.getOrCreateConversation(matchedUser.uid);
+      navigate('/chat', { state: { userId: matchedUser.uid } });
+    } catch (err: any) {
+      console.error('Failed to start conversation:', err);
+      alert('Failed to start conversation. Please try again.');
+    }
+  };
+
+  if (loading) {
+    return (
+      <>
+        <Navigation />
+        <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 'calc(100vh - 4rem)' }}>
+          <p className="text-body">Loading...</p>
+        </div>
+      </>
+    );
+  }
+
+  if (!currentUser?.profileCompleted) {
+    return (
+      <>
+        <Navigation />
+        <div className="container">
+          <div className="card card--medium card--centered">
+            <h1 className="text-title text-center">Complete Your Profile</h1>
+            <p className="text-body text-center">
+              Please complete your profile to start swiping on others.
+            </p>
+            <p className="text-body text-center">
+              You need to upload a profile picture, at least one feet photo, and add your full name.
+            </p>
+            <button
+              className="btn btn--primary"
+              onClick={() => navigate('/profile')}
+              style={{ marginTop: '1.5rem' }}
+            >
+              Go to Profile
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  const currentProfile = profiles[currentIndex];
+
+  if (!currentProfile) {
+    return (
+      <>
+        <Navigation />
+        <div className="swipe-container">
+          <div className="swipe-empty-state">
+            <h2 className="text-title text-center">No more profiles!</h2>
+            <p className="text-body text-center">
+              You've seen all available profiles. Check back later for new matches!
+            </p>
+            <p className="swipe-empty-state-link">
+              <Link to="/chat" className="swipe-empty-state-link-text">View Your Matches</Link>
+            </p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Calculate rotation and opacity for drag effect
+  const rotation = isDragging ? dragOffset.x / 30 : 0;
+  const opacity = isDragging ? 1 - Math.abs(dragOffset.x) / 300 : 1;
+  
+  // Calculate color tint based on drag direction
+  const getCardBackground = () => {
+    if (!isDragging || swipeDirection) return 'transparent';
+    
+    const dragAmount = Math.abs(dragOffset.x);
+    const intensity = Math.min(dragAmount / 150, 0.3); // Max 30% color intensity
+    
+    if (dragOffset.x > 0) {
+      // Dragging right - green tint for like
+      return `rgba(76, 175, 80, ${intensity})`;
+    } else if (dragOffset.x < 0) {
+      // Dragging left - red tint for pass
+      return `rgba(244, 67, 54, ${intensity})`;
+    }
+    return 'transparent';
   };
 
   return (
     <>
       <Navigation />
-      <div className="container">
-        <div className="swipe-container">
-          <div className="swipe-header">
-            <h1 className="swipe-title">Gesture-Controlled Swipe</h1>
-            <p className="swipe-subtitle">
-              Use head gestures to swipe: Nod YES (up/down) or Shake NO (left/right)
-            </p>
-          </div>
+      <div className="swipe-container">
+        <div className="swipe-card-wrapper">
+          <div 
+            ref={cardRef}
+            className={`swipe-card ${swipeDirection ? `swipe-card--swipe-${swipeDirection}` : ''}`}
+            style={{
+              transform: isDragging && !swipeDirection
+                ? `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${rotation}deg)`
+                : '',
+              opacity: swipeDirection ? 1 : opacity,
+              backgroundColor: getCardBackground(),
+              cursor: isDragging ? 'grabbing' : 'grab',
+              userSelect: 'none',
+            }}
+            onMouseDown={handleMouseDown}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {/* Profile Picture */}
+            <div className="swipe-card-image-container">
+              {currentProfile.profilePicture ? (
+                <img 
+                  src={currentProfile.profilePicture} 
+                  alt={currentProfile.fullName || 'User'} 
+                  className="swipe-card-image"
+                />
+              ) : (
+                <div className="swipe-card-image-placeholder">
+                  {(currentProfile.fullName || currentProfile.displayName || 'U')[0]?.toUpperCase()}
+                </div>
+              )}
+            </div>
 
-          <div className="video-container">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="video-preview"
-              style={{ display: isActive ? 'block' : 'none' }}
-            />
-            <canvas
-              ref={canvasRef}
-              className="video-canvas"
-              style={{ display: isActive ? 'block' : 'none' }}
-            />
-            {!isActive && (
-              <div className="video-placeholder">
-                <p>Click "Start Camera" to begin</p>
+            {/* Profile Info */}
+            <div className="swipe-card-info">
+              <h2 className="swipe-card-name">
+                {currentProfile.fullName || currentProfile.displayName || 'Anonymous'}
+                {currentProfile.age && <span className="swipe-card-age">, {currentProfile.age}</span>}
+              </h2>
+              
+              {currentProfile.bio && (
+                <p className="swipe-card-bio">{currentProfile.bio}</p>
+              )}
+
+              {/* Feet Photos Preview */}
+              {currentProfile.feetPhotos && currentProfile.feetPhotos.length > 0 && (
+                <div className="swipe-card-feet-preview">
+                  <h3 className="swipe-card-section-title">Feet Photos</h3>
+                  <div className="swipe-card-feet-grid">
+                    {currentProfile.feetPhotos.slice(0, 3).map((photo, idx) => (
+                      <img 
+                        key={idx} 
+                        src={photo} 
+                        alt={`Feet photo ${idx + 1}`}
+                        className="swipe-card-feet-image"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Additional Info */}
+              <div className="swipe-card-details">
+                {currentProfile.archType && (
+                  <div className="swipe-card-detail-item">
+                    <span className="swipe-card-detail-label">Arch Type:</span>
+                    <span className="swipe-card-detail-value">{currentProfile.archType}</span>
+                  </div>
+                )}
+                {currentProfile.archSize && (
+                  <div className="swipe-card-detail-item">
+                    <span className="swipe-card-detail-label">Arch Size:</span>
+                    <span className="swipe-card-detail-value">{currentProfile.archSize}</span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-
-          <div className="controls">
-            <button
-              onClick={toggleWebcam}
-              className={`btn ${isActive ? 'btn-danger' : 'btn-primary'}`}
-            >
-              {isActive ? 'Stop Camera' : 'Start Camera'}
-            </button>
-          </div>
-
-          {error && (
-            <div className="error-message">
-              <p>{error}</p>
-            </div>
-          )}
-
-          <div className="buffer-status">
-            <div className="buffer-label">Buffer: {Math.round(bufferStatus)}%</div>
-            <div className="buffer-bar">
-              <div
-                className="buffer-fill"
-                style={{ width: `${bufferStatus}%` }}
-              />
             </div>
           </div>
-
-          {gestureResult && (
-            <div
-              className="gesture-result"
-              style={{ borderColor: getGestureColor(gestureResult.gesture) }}
-            >
-              <h2 className="gesture-label">{gestureResult.gesture}</h2>
-              <p className="gesture-confidence">
-                Confidence: {(gestureResult.confidence * 100).toFixed(1)}%
-              </p>
-              <div className="gesture-probabilities">
-                <div className="prob-item">
-                  <span>YES:</span>
-                  <span>{(gestureResult.probabilities.YES * 100).toFixed(1)}%</span>
-                </div>
-                <div className="prob-item">
-                  <span>NO:</span>
-                  <span>{(gestureResult.probabilities.NO * 100).toFixed(1)}%</span>
-                </div>
-                <div className="prob-item">
-                  <span>NEUTRAL:</span>
-                  <span>{(gestureResult.probabilities.NEUTRAL * 100).toFixed(1)}%</span>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
+
+        {/* Action Buttons */}
+        <div className="swipe-actions">
+          <button
+            className="swipe-action-btn swipe-action-btn--pass"
+            onClick={() => handleSwipe('pass')}
+            disabled={swiping || swipeDirection !== null}
+          >
+            ✕ Pass
+          </button>
+          <button
+            className="swipe-action-btn swipe-action-btn--like"
+            onClick={() => handleSwipe('like')}
+            disabled={swiping || swipeDirection !== null}
+          >
+            ♥ Like
+          </button>
+        </div>
+
+        {/* Match Modal */}
+        {showMatchModal && matchedUser && (
+          <div className="swipe-match-modal-overlay" onClick={handleMatchModalClose}>
+            <div className="swipe-match-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="swipe-match-modal-content">
+                <h2 className="swipe-match-title">It's a Match!</h2>
+                <p className="swipe-match-text">
+                  You and {matchedUser.fullName || matchedUser.displayName || 'this user'} liked each other.
+                </p>
+                <div className="swipe-match-actions">
+                  <Button
+                    variant="primary"
+                    onClick={handleSendMessage}
+                    className="swipe-match-btn"
+                  >
+                    Send Message
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={handleMatchModalClose}
+                    className="swipe-match-btn"
+                  >
+                    Keep Swiping
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
