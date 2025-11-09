@@ -16,6 +16,7 @@ export class GesturesController {
     @Body() dto: GesturePredictionDto,
     @Request() req,
   ) {
+<<<<<<< HEAD
     console.log('[BACKEND] ========================================');
     console.log('[BACKEND] 📥 Received gesture prediction request');
     console.log('[BACKEND] User ID:', req.user?.uid);
@@ -24,6 +25,9 @@ export class GesturesController {
 
     if (!this.gesturesService.isModelLoaded()) {
       console.log('[BACKEND] ❌ Model not loaded');
+=======
+    if (!this.gesturesService.isModelLoaded()) {
+>>>>>>> 687a511 (Improve gesture detection: reduce logging, add pattern detection, and optimize performance)
       return {
         success: false,
         error: 'Gesture recognition model is not loaded',
@@ -31,22 +35,20 @@ export class GesturesController {
     }
 
     try {
-      console.log('[BACKEND] Calling Python prediction script with gesture_classifier.h5...');
       const result = await this.gesturesService.predictGesture(dto.sequence);
-      console.log('[BACKEND] Prediction result:', {
-        gesture: result.gesture,
-        confidence: Number(result.confidence.toFixed(3)),
-        probabilities: result.probabilities
-      });
       return {
         success: true,
         ...result,
         userId: req.user.uid,
       };
     } catch (error: any) {
+<<<<<<< HEAD
       console.error('[BACKEND] ❌ Prediction error:', error.message);
       console.error('[BACKEND] Error stack:', error.stack);
       console.log('[BACKEND] ========================================');
+=======
+      // Only log actual errors, not expected behavior
+>>>>>>> 687a511 (Improve gesture detection: reduce logging, add pattern detection, and optimize performance)
       return {
         success: false,
         error: error.message,
