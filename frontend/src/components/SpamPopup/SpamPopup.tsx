@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import './SpamPopup.css';
 
 const SPAM_MESSAGES = [
@@ -27,6 +29,8 @@ const SPAM_IMAGES = [
 ];
 
 export const SpamPopup: React.FC = () => {
+  const navigate = useNavigate();
+  const { user } = useAuthUser();
   const [isVisible, setIsVisible] = useState(false);
   const [message, setMessage] = useState('');
   const [image, setImage] = useState('');
@@ -43,7 +47,19 @@ export const SpamPopup: React.FC = () => {
     setIsVisible(true);
   };
 
-  const handleClose = () => {
+  const handleClose = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    setIsVisible(false);
+  };
+
+  const handleClick = () => {
+    if (user) {
+      navigate('/swipe');
+    } else {
+      navigate('/signup');
+    }
     setIsVisible(false);
   };
 
@@ -51,10 +67,10 @@ export const SpamPopup: React.FC = () => {
     // Show first popup instantly
     showPopup();
 
-    // Then show popup every 30 seconds
+    // Then show popup every 7 seconds
     const interval = setInterval(() => {
       showPopup();
-    }, 30000);
+    }, 7000);
 
     return () => {
       clearInterval(interval);
@@ -66,7 +82,7 @@ export const SpamPopup: React.FC = () => {
   }
 
   return (
-    <div className={`spam-popup spam-popup--${position}`}>
+    <div className={`spam-popup spam-popup--${position}`} onClick={handleClick}>
       <button className="spam-popup-close" onClick={handleClose}>×</button>
       <div className="spam-popup-content">
         <img src={image} alt="Spam" className="spam-popup-image" />

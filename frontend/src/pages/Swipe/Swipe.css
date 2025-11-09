@@ -34,8 +34,8 @@
   bottom: 0;
   pointer-events: none;
   border-radius: 0.875rem;
-  transition: background-color 0.15s ease;
-  z-index: 1;
+  transition: background-color 0.1s ease;
+  z-index: 100;
 }
 
 .swipe-card--swipe-left {
@@ -69,7 +69,6 @@
   justify-content: center;
   overflow: hidden;
   position: relative;
-  z-index: 2;
 }
 
 .swipe-card-image {
@@ -94,7 +93,6 @@
 .swipe-card-info {
   padding: 1.25rem;
   position: relative;
-  z-index: 2;
 }
 
 .swipe-card-name {

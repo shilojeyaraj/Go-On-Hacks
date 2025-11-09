@@ -111,6 +111,13 @@ export const Swipe: React.FC = () => {
     setDragStart({ x: e.clientX, y: e.clientY });
   };
 
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging || swiping || swipeDirection) return;
+    const deltaX = e.clientX - dragStart.x;
+    const deltaY = e.clientY - dragStart.y;
+    setDragOffset({ x: deltaX, y: deltaY });
+  };
+
   const handleMouseUp = () => {
     if (!isDragging) return;
     const finalOffset = dragOffset;
@@ -151,6 +158,40 @@ export const Swipe: React.FC = () => {
       setDragOffset({ x: 0, y: 0 });
     }
   };
+
+  // Handle mouse move and up globally for better drag experience
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - dragStart.x;
+      const deltaY = e.clientY - dragStart.y;
+      setDragOffset({ x: deltaX, y: deltaY });
+    };
+
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false);
+      // Use a callback to get the latest dragOffset
+      setDragOffset((currentOffset) => {
+        // If dragged far enough, trigger swipe
+        if (Math.abs(currentOffset.x) > 150) {
+          handleSwipe(currentOffset.x > 0 ? 'like' : 'pass');
+        } else {
+          // Reset if not dragged far enough
+          return { x: 0, y: 0 };
+        }
+        return currentOffset;
+      });
+    };
+
+    document.addEventListener('mousemove', handleGlobalMouseMove);
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [isDragging, dragStart, handleSwipe]);
 
   const handleMatchModalClose = () => {
     setShowMatchModal(false);
@@ -232,19 +273,19 @@ export const Swipe: React.FC = () => {
   const rotation = isDragging ? dragOffset.x / 30 : 0;
   const opacity = isDragging ? 1 - Math.abs(dragOffset.x) / 300 : 1;
   
-  // Calculate color tint based on drag direction
-  const getCardBackground = () => {
+  // Calculate color overlay based on drag direction
+  const getCardOverlayColor = () => {
     if (!isDragging || swipeDirection) return '';
     
     const dragAmount = Math.abs(dragOffset.x);
     
     if (dragOffset.x > 0) {
-      // Dragging right - green for like
-      const intensity = Math.min(dragAmount / 150, 0.6); // Max 60% intensity for green
+      // Dragging right (like) - GREEN
+      const intensity = Math.min(dragAmount / 150, 0.7); // Max 70% intensity for green
       return `rgba(76, 175, 80, ${intensity})`;
     } else if (dragOffset.x < 0) {
-      // Dragging left - red for reject
-      const intensity = Math.min(dragAmount / 150, 0.6); // Max 60% intensity for red
+      // Dragging left (dislike/pass) - RED
+      const intensity = Math.min(dragAmount / 150, 0.7); // Max 70% intensity for red
       return `rgba(244, 67, 54, ${intensity})`;
     }
     return '';
@@ -267,18 +308,16 @@ export const Swipe: React.FC = () => {
               userSelect: 'none',
             } as React.CSSProperties}
             onMouseDown={handleMouseDown}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
-            {/* Color overlay for swipe feedback */}
+            {/* Color overlay for swipe feedback - covers entire card including images */}
             {isDragging && !swipeDirection && (
               <div 
                 className="swipe-card-overlay"
                 style={{
-                  backgroundColor: getCardBackground(),
+                  backgroundColor: getCardOverlayColor() || 'transparent',
                 }}
               />
             )}
@@ -342,24 +381,6 @@ export const Swipe: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="swipe-actions">
-          <button
-            className="swipe-action-btn swipe-action-btn--pass"
-            onClick={() => handleSwipe('pass')}
-            disabled={swiping || swipeDirection !== null}
-          >
-            ✕ Pass
-          </button>
-          <button
-            className="swipe-action-btn swipe-action-btn--like"
-            onClick={() => handleSwipe('like')}
-            disabled={swiping || swipeDirection !== null}
-          >
-            ♥ Like
-          </button>
         </div>
 
         {/* Match Modal */}

@@ -16,13 +16,13 @@ ToeGether is a modern dating application that helps users find their perfect mat
 1. Navigate to the backend directory:
 
    ```bash
-   cd backend
+cd backend
    ```
 
 2. Install dependencies:
 
    ```bash
-   npm install
+npm install
    ```
 
 3. Create a `.env` file from the template:
@@ -36,29 +36,29 @@ ToeGether is a modern dating application that helps users find their perfect mat
 4. Start the NestJS development server:
 
    ```bash
-   npm run start:dev
+npm run start:dev
    ```
 
-   The backend will run on http://localhost:3000
+The backend will run on http://localhost:3000
 
 ### Frontend Setup
 
 1. Navigate to the frontend directory:
 
    ```bash
-   cd frontend
+cd frontend
    ```
 
 2. Install dependencies:
 
    ```bash
-   npm install
+npm install
    ```
 
 3. Create a `.env` file from the template:
 
    ```powershell
-   Copy-Item env.example .env
+Copy-Item env.example .env
    ```
 
    Or manually copy `env.example` to `.env` and update the values with your Firebase credentials.
@@ -66,10 +66,10 @@ ToeGether is a modern dating application that helps users find their perfect mat
 4. Start the React development server:
 
    ```bash
-   npm start
+npm start
    ```
 
-   The frontend will run on http://localhost:3001
+The frontend will run on http://localhost:3001
 
 ## Firebase Configuration
 
@@ -153,15 +153,15 @@ Once trained, the model can be used for gesture-based swiping in the application
 2. Start the backend server (Terminal 1):
 
    ```bash
-   cd backend
-   npm run start:dev
+cd backend
+npm run start:dev
    ```
 
 3. Start the frontend server (Terminal 2):
 
    ```bash
-   cd frontend
-   npm start
+cd frontend
+npm start
    ```
 
 4. Open your browser and navigate to http://localhost:3001
