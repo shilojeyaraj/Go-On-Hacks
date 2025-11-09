@@ -93,10 +93,18 @@ export const Home: React.FC = () => {
             
             <div className="home-benefits-list">
               {BENEFITS.map((benefit, index) => (
-                <div key={index} className="home-benefit-item">
-                  <h3 className="home-benefit-title">{benefit.title}</h3>
-                  <p className="home-benefit-description">{benefit.description}</p>
-                </div>
+                <React.Fragment key={index}>
+                  <div className="home-benefit-item">
+                    <div className="home-benefit-bullet">👣</div>
+                    <div className="home-benefit-content">
+                      <h3 className="home-benefit-title">{benefit.title}</h3>
+                      <p className="home-benefit-description">{benefit.description}</p>
+                    </div>
+                  </div>
+                  {index < BENEFITS.length - 1 && (
+                    <div className="home-benefit-connector"></div>
+                  )}
+                </React.Fragment>
               ))}
             </div>
           </div>
