@@ -99,10 +99,6 @@ export const Login: React.FC = () => {
             {loading && <p className="text-small text-center mt-small" style={{ color: 'var(--text-dark)' }}>Signing in...</p>}
           </form>
 
-          <div className="auth-divider">
-            <span>or</span>
-          </div>
-
           <button
             type="button"
             onClick={handleGoogleLogin}
