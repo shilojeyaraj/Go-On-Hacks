@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Navigation } from '../../components/Navigation/Navigation';
 import { Button } from '../../components/Button/Button';
 import { useAuthUser } from '../../hooks/useAuthUser';
+import { SpamPopup } from '../../components/SpamPopup/SpamPopup';
 import './Home.css';
 
 const COLLAGE_IMAGES = [
@@ -45,6 +46,7 @@ export const Home: React.FC = () => {
   return (
     <>
       <Navigation />
+      <SpamPopup />
       <div className="home-page">
         {/* Hero Section */}
         <section className="home-hero">
