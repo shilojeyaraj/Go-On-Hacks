@@ -198,7 +198,7 @@ export class UsersService {
     const DAILY_SWIPE_LIMIT = 50;
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
-    const tracking = user.swipeTracking || {};
+    const tracking = user.swipeTracking || { date: '', count: 0 };
     
     // Reset if it's a new day
     if (tracking.date !== today) {
@@ -229,7 +229,7 @@ export class UsersService {
     }
 
     const today = new Date().toISOString().split('T')[0];
-    const tracking = user.swipeTracking || {};
+    const tracking = user.swipeTracking || { date: '', count: 0 };
 
     if (tracking.date === today) {
       // Increment count for today

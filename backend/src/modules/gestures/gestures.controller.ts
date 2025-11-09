@@ -18,8 +18,8 @@ export class GesturesController {
   ) {
     console.log('[BACKEND] Received gesture prediction request');
     console.log('[BACKEND] User ID:', req.user?.uid);
-    console.log('[BACKEND] Sequence length:', dto.sequence?.length);
-    console.log('[BACKEND] First frame features:', dto.sequence?.[0]?.length);
+    console.log('[BACKEND] Sequence length:', dto.sequence?.length, 'frames');
+    console.log('[BACKEND] Features per frame:', dto.sequence?.[0]?.length);
 
     if (!this.gesturesService.isModelLoaded()) {
       console.log('[BACKEND] Model not loaded');
@@ -30,9 +30,13 @@ export class GesturesController {
     }
 
     try {
-      console.log('[BACKEND] Calling Python prediction script...');
+      console.log('[BACKEND] Calling Python prediction script with gesture_classifier.h5...');
       const result = await this.gesturesService.predictGesture(dto.sequence);
-      console.log('[BACKEND] Prediction result:', result);
+      console.log('[BACKEND] Prediction result:', {
+        gesture: result.gesture,
+        confidence: Number(result.confidence.toFixed(3)),
+        probabilities: result.probabilities
+      });
       return {
         success: true,
         ...result,

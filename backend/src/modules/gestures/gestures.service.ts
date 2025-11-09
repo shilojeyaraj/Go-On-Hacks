@@ -21,20 +21,16 @@ export class GesturesService implements OnModuleInit {
       
       // Check if model exists
       if (!fs.existsSync(modelPath)) {
-        console.warn(`Model not found at ${modelPath}. Gesture recognition will be disabled.`);
+        console.warn(`[BACKEND] Model not found at ${modelPath}. Gesture recognition will be disabled.`);
         return;
       }
 
-      // Load the model using TensorFlow.js
-      // Note: We need to convert H5 to TensorFlow.js format or use a different approach
-      // For now, we'll use a Python subprocess approach or convert the model
-      console.log('Loading gesture recognition model...');
-      
-      // Alternative: Use Python script to run predictions
-      // This is a workaround since TensorFlow.js doesn't directly support H5 files
-      console.log('Model loading initialized. Using Python backend for predictions.');
+      console.log('[BACKEND] Gesture recognition model started');
+      console.log('[BACKEND] Model path:', modelPath);
+      console.log('[BACKEND] Using Python backend with gesture_classifier.h5 for predictions');
+      console.log('[BACKEND] Model ready - waiting for prediction requests');
     } catch (error) {
-      console.error('Error loading gesture model:', error);
+      console.error('[BACKEND] Error loading gesture model:', error);
     }
   }
 
