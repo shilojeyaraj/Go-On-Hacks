@@ -5,6 +5,8 @@ import { ChatService } from './chat.service';
 import { Conversation, ConversationSchema } from './schemas/conversation.schema';
 import { Message, MessageSchema } from './schemas/message.schema';
 import { Swipe, SwipeSchema } from '../users/schemas/swipe.schema';
+import { UsersModule } from '../users/users.module';
+import { AuthUserSyncInterceptor } from '../../common/interceptors/auth-user-sync.interceptor';
 
 @Module({
   imports: [
@@ -13,9 +15,10 @@ import { Swipe, SwipeSchema } from '../users/schemas/swipe.schema';
       { name: Message.name, schema: MessageSchema },
       { name: Swipe.name, schema: SwipeSchema },
     ]),
+    UsersModule,
   ],
   controllers: [ChatController],
-  providers: [ChatService],
+  providers: [ChatService, AuthUserSyncInterceptor],
   exports: [ChatService],
 })
 export class ChatModule {}

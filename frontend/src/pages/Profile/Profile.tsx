@@ -310,16 +310,13 @@ export const Profile: React.FC = () => {
     <>
       <Navigation />
       <div className="profile-container">
-        <div className="profile-header">
-          <h1 className="text-title">Your Profile</h1>
-          {!isProfileComplete && (
-            <div className="profile-completion-banner">
-              <p className="profile-completion-text">
-                Complete your profile to start matching! ({Math.round(profileCompletionStatus)}%)
-              </p>
-            </div>
-          )}
-        </div>
+        {!isProfileComplete && (
+          <div className="profile-completion-banner">
+            <p className="profile-completion-text">
+              Complete your profile to start matching! ({Math.round(profileCompletionStatus)}%)
+            </p>
+          </div>
+        )}
 
         <div className="profile-tabs">
           <button
@@ -339,6 +336,7 @@ export const Profile: React.FC = () => {
         <div className="profile-content">
           {error && <div className="error-message">{error}</div>}
 
+          <div className={`profile-tab-content ${activeTab === 'profile' ? 'profile-tab-content--active' : ''}`}>
           {activeTab === 'profile' && (
             <div className="profile-form">
               <div className="profile-section profile-section--picture">
@@ -472,12 +470,15 @@ export const Profile: React.FC = () => {
                 disabled={saving}
                 className="profile-save-btn"
               >
-                {saving ? 'Saving...' : 'Save Profile'}
+                Save Profile
               </Button>
+              {saving && <p className="text-small text-center mt-small" style={{ color: 'var(--text-dark)' }}>Saving...</p>}
               {success && <div className="profile-success-text">{success}</div>}
             </div>
           )}
+          </div>
 
+          <div className={`profile-tab-content ${activeTab === 'preferences' ? 'profile-tab-content--active' : ''}`}>
           {activeTab === 'preferences' && (
             <div className="profile-form">
               <div className="profile-section">
@@ -737,11 +738,13 @@ export const Profile: React.FC = () => {
                 disabled={saving}
                 className="profile-save-btn"
               >
-                {saving ? 'Saving...' : 'Save Preferences'}
+                Save Preferences
               </Button>
+              {saving && <p className="text-small text-center mt-small" style={{ color: 'var(--text-dark)' }}>Saving...</p>}
               {success && <div className="profile-success-text">{success}</div>}
             </div>
           )}
+          </div>
         </div>
       </div>
     </>

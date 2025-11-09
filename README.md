@@ -1,129 +1,172 @@
-ToeGether
+# ToeGether
 
 ToeGether is a modern dating application that helps users find their perfect match. The platform features Firebase authentication, user profile management, and a matching system designed to connect people based on their preferences.
 
-Installation
+## Table of Contents
 
-Prerequisites
+- [Installation](#installation)
+  - [Prerequisites](#prerequisites)
+  - [Backend Setup](#backend-setup)
+  - [Frontend Setup](#frontend-setup)
+- [Firebase Configuration](#firebase-configuration)
+- [MongoDB Setup](#mongodb-setup)
+- [Usage](#usage)
+- [Features](#features)
+- [Contributing](#contributing)
+- [License](#license)
 
-Node.js 14+
-npm or yarn
-MongoDB (running locally or remote connection)
-Firebase project with Authentication enabled
+## Installation
 
-Backend Setup
+### Prerequisites
 
-Navigate to the backend directory:
+Before you begin, ensure you have the following installed:
 
-cd backend
+- Node.js 14+
+- npm or yarn
+- MongoDB (running locally or remote connection)
+- Firebase project with Authentication enabled
 
-Install dependencies:
+### Backend Setup
 
-npm install
+1. Navigate to the backend directory:
 
-Create a .env file from the template:
+   ```bash
+   cd backend
+   ```
 
-Copy-Item env.template .env
+2. Install dependencies:
 
-Edit the .env file and add your configuration:
+   ```bash
+   npm install
+   ```
 
-PORT=3000
-MONGODB_URI=mongodb://localhost:27017/ToeGether
-FRONTEND_URL=http://localhost:3001
-FB_PROJECT_ID=your_project_id
-FB_CLIENT_EMAIL=your_client_email@your_project.iam.gserviceaccount.com
-FB_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+3. Create a `.env` file from the template:
 
-Start the NestJS development server:
+   ```powershell
+   Copy-Item env.template .env
+   ```
 
-npm run start:dev
+4. Edit the `.env` file and add your configuration:
 
-The backend will run on http://localhost:3000
+   ```env
+   PORT=3000
+   MONGODB_URI=mongodb://localhost:27017/ToeGether
+   FRONTEND_URL=http://localhost:3001
+   FB_PROJECT_ID=your_project_id
+   FB_CLIENT_EMAIL=your_client_email@your_project.iam.gserviceaccount.com
+   FB_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+   ```
 
-Frontend Setup
+5. Start the NestJS development server:
 
-Navigate to the frontend directory:
+   ```bash
+   npm run start:dev
+   ```
 
-cd frontend
+   The backend will run on http://localhost:3000
 
-Install dependencies:
+### Frontend Setup
 
-npm install
+1. Navigate to the frontend directory:
 
-Create a .env file from the template:
+   ```bash
+   cd frontend
+   ```
 
-Copy-Item env.example .env
+2. Install dependencies:
 
-Edit the .env file and add your Firebase configuration:
+   ```bash
+   npm install
+   ```
 
-PORT=3001
-REACT_APP_API_URL=http://localhost:3000
-REACT_APP_FIREBASE_API_KEY=your_api_key
-REACT_APP_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
-REACT_APP_FIREBASE_PROJECT_ID=your_project_id
-REACT_APP_FIREBASE_STORAGE_BUCKET=your_project_id.firebasestorage.app
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-REACT_APP_FIREBASE_APP_ID=your_app_id
+3. Create a `.env` file from the template:
 
-Start the React development server:
+   ```powershell
+   Copy-Item env.example .env
+   ```
 
-npm start
+4. Edit the `.env` file and add your Firebase configuration:
 
-The frontend will run on http://localhost:3001
+   ```env
+   PORT=3001
+   REACT_APP_API_URL=http://localhost:3000
+   REACT_APP_FIREBASE_API_KEY=your_api_key
+   REACT_APP_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+   REACT_APP_FIREBASE_PROJECT_ID=your_project_id
+   REACT_APP_FIREBASE_STORAGE_BUCKET=your_project_id.firebasestorage.app
+   REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   REACT_APP_FIREBASE_APP_ID=your_app_id
+   ```
 
-Firebase Configuration
+5. Start the React development server:
+
+   ```bash
+   npm start
+   ```
+
+   The frontend will run on http://localhost:3001
+
+## Firebase Configuration
 
 1. Go to Firebase Console and select your project
 2. Navigate to Authentication and click Get started
 3. Enable Email/Password authentication
 4. Enable Google authentication
 5. Go to Project Settings and generate a new service account key
-6. Download the JSON file and extract the required values for backend .env
-7. Copy the Web SDK configuration values to frontend .env
+6. Download the JSON file and extract the required values for `backend/.env`
+7. Copy the Web SDK configuration values to `frontend/.env`
 
-MongoDB Setup
+## MongoDB Setup
 
 1. Install MongoDB locally or use MongoDB Atlas
-2. Create a database named ToeGether
-3. The users collection will be created automatically when users sign up
-4. Update MONGODB_URI in backend/.env with your connection string
+2. Create a database named `ToeGether`
+3. The `users` collection will be created automatically when users sign up
+4. Update `MONGODB_URI` in `backend/.env` with your connection string
 
-Usage
+## Usage
 
 1. Start MongoDB if running locally
+
 2. Start the backend server (Terminal 1):
 
-cd backend
-npm run start:dev
+   ```bash
+   cd backend
+   npm run start:dev
+   ```
 
 3. Start the frontend server (Terminal 2):
 
-cd frontend
-npm start
+   ```bash
+   cd frontend
+   npm start
+   ```
 
 4. Open your browser and navigate to http://localhost:3001
+
 5. Click Sign Up to create a new account
+
 6. Use Email/Password or Google Sign-In to authenticate
+
 7. Browse matches, chat with connections, and manage your profile
 
-Features
+## Features
 
-Email/Password Authentication
-Google Sign-In
-User Profile Management
-Password Reset
-Protected Routes
-User Data Synchronization with MongoDB
-Responsive Design
+- Email/Password Authentication
+- Google Sign-In
+- User Profile Management
+- Password Reset
+- Protected Routes
+- User Data Synchronization with MongoDB
+- Responsive Design
 
-Contributing
+## Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-License
+## License
 
 This project is licensed under the MIT License.
-

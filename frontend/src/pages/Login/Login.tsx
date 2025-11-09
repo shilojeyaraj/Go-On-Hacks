@@ -33,8 +33,7 @@ export const Login: React.FC = () => {
 
     try {
       await AuthService.signIn(email, password);
-      // Sync user to MongoDB after successful login
-      await UserSyncService.syncUser();
+      // User sync is handled by useAuthUser hook and backend interceptor
       navigate('/');
     } catch (err: any) {
       setError(err.message || 'Failed to sign in');
@@ -49,8 +48,7 @@ export const Login: React.FC = () => {
 
     try {
       await AuthService.signInWithGoogle();
-      // Sync user to MongoDB after successful Google login
-      await UserSyncService.syncUser();
+      // User sync is handled by useAuthUser hook and backend interceptor
       navigate('/');
     } catch (err: any) {
       setError(err.message || 'Failed to sign in with Google');
@@ -93,8 +91,9 @@ export const Login: React.FC = () => {
               </Link>
             </div>
             <Button type="submit" variant="secondary" disabled={loading} className="btn--full-width">
-              {loading ? 'Signing in...' : 'Sign In'}
+              Sign In
             </Button>
+            {loading && <p className="text-small text-center mt-small" style={{ color: 'var(--text-dark)' }}>Signing in...</p>}
           </form>
 
           <Button
@@ -106,6 +105,7 @@ export const Login: React.FC = () => {
           >
             Sign in with Google
           </Button>
+          {loading && <p className="text-small text-center mt-small" style={{ color: 'var(--text-dark)' }}>Signing in...</p>}
 
           <p className="text-small text-center mt-large">
             Don't have an account? <Link to="/signup" className="link">Sign up</Link>

@@ -72,8 +72,9 @@ export const ForgotPassword: React.FC = () => {
                 required
               />
               <Button type="submit" variant="secondary" disabled={loading} className="btn--full-width">
-                {loading ? 'Sending...' : 'Send Reset Link'}
+                Send Reset Link
               </Button>
+              {loading && <p className="text-small text-center mt-small" style={{ color: 'var(--text-dark)' }}>Sending...</p>}
             </form>
           ) : (
             <Button
@@ -94,5 +95,6 @@ export const ForgotPassword: React.FC = () => {
     </>
   );
 };
+
 
 

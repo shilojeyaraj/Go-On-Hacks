@@ -2,8 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Navigation } from '../../components/Navigation/Navigation';
 import { useAuthUser } from '../../hooks/useAuthUser';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChatService, ChatMatch, Message } from '../../services/chat.service';
+import { ChatService, ChatMatch, Message as ApiMessage } from '../../services/chat.service';
 import './Chat.css';
+
+// Local interface for messages displayed in the component
+interface Message {
+  id: string;
+  senderId: string;
+  content: string;
+  timestamp: string;
+  isOwn: boolean;
+}
 
 export const Chat: React.FC = () => {
   const { user } = useAuthUser();
@@ -57,9 +66,9 @@ export const Chat: React.FC = () => {
 
   const loadMessages = async (conversationId: string) => {
     try {
-      const msgs = await ChatService.getMessages(conversationId);
+      const msgs: ApiMessage[] = await ChatService.getMessages(conversationId);
       // Transform messages to match component interface
-      const transformedMessages: Message[] = msgs.map((msg: any) => ({
+      const transformedMessages: Message[] = msgs.map((msg: ApiMessage) => ({
         id: msg._id,
         senderId: msg.senderId,
         content: msg.content,
@@ -175,7 +184,7 @@ export const Chat: React.FC = () => {
                 </div>
               ) : matches.length === 0 ? (
                 <div className="chat-empty-state">
-                  <p className="chat-empty-text">no feets for you lil bro</p>
+                  <p className="chat-empty-text">no <span className="text-red">feets</span> for you lil bro</p>
                 </div>
               ) : (
                 <div className="chat-list">
@@ -269,8 +278,9 @@ export const Chat: React.FC = () => {
                     className="chat-send-button"
                     disabled={sending || !messageInput.trim()}
                   >
-                    {sending ? 'Sending...' : 'Send'}
+                    Send
                   </button>
+                  {sending && <p className="text-small text-center mt-small" style={{ color: 'var(--text-dark)', fontSize: '0.75rem' }}>Sending...</p>}
                 </form>
               </>
             ) : (

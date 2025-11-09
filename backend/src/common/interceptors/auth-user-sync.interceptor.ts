@@ -30,4 +30,3 @@ export class AuthUserSyncInterceptor implements NestInterceptor {
     return next.handle();
   }
 }
-
