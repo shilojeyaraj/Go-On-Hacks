@@ -10,14 +10,13 @@ type TabType = 'profile' | 'preferences';
 
 const ARCH_TYPES = ['High', 'Medium', 'Low', 'Flat'];
 const ARCH_SIZES = ['Small', 'Medium', 'Large', 'Extra Large'];
-const AGE_CATEGORIES = ['18-25', '26-35', '36-45', '46-55', '56-65', '65+'];
+const AGE_CATEGORIES = ['Googgoogaga', 'Underage', 'Middle Aged', 'Have Grandchildren'];
 const FAMILY_STATUSES = [
+  'Minor',
+  'Underage Mom',
   'Divorced Mom',
   'Divorced Dad',
-  'Engaged',
-  'Single',
-  'Married',
-  'In a Relationship'
+  'Engaged'
 ];
 
 const FOOT_FEEL_PREFERENCES = [
@@ -204,14 +203,6 @@ export const Profile: React.FC = () => {
         updateData.bio = bio.trim();
       }
 
-      // Check if there's any data to save
-      if (Object.keys(updateData).length === 0) {
-        setError('Please fill in at least one field before saving');
-        setSaving(false);
-        return;
-      }
-
-      console.log('[Profile] Saving profile data:', Object.keys(updateData));
       const updatedUser = await UserService.updateProfile(updateData);
       setUser(updatedUser);
       
@@ -232,13 +223,9 @@ export const Profile: React.FC = () => {
       
       setSuccess('Profile saved successfully!');
     } catch (err: any) {
-      console.error('Profile save error:', err);
       const errorMessage = err.message || '';
-      // Show all errors, including network errors
-      if (errorMessage) {
+      if (errorMessage && !errorMessage.includes('404')) {
         setError(errorMessage || 'Failed to save profile');
-      } else {
-        setError('Failed to save profile. Please check your connection and try again.');
       }
     } finally {
       setSaving(false);
@@ -353,9 +340,6 @@ export const Profile: React.FC = () => {
           {activeTab === 'profile' && (
             <div className="profile-form">
               <div className="profile-section profile-section--picture">
-                <h3 className="text-subheading">
-                  Profile Picture <span className="required-star">*</span>
-                </h3>
                 <div className="profile-picture-wrapper">
                   <div className="profile-picture-container">
                     {profilePicture ? (
@@ -406,9 +390,7 @@ export const Profile: React.FC = () => {
               </div>
 
               <div className="profile-section profile-section--feet-photos">
-                <h3 className="text-subheading">
-                  Feet Photos <span className="required-star">*</span>
-                </h3>
+                <h3 className="text-subheading">Feet Photos</h3>
                 <p className="text-small" style={{ marginBottom: '0.75rem' }}>Upload at least 1 photo of your feet</p>
                 <div className="feet-photos-grid">
                   {feetPhotos.map((photo, index) => (
@@ -461,9 +443,7 @@ export const Profile: React.FC = () => {
               </div>
 
               <div className="profile-section profile-section--full-name">
-                <h3 className="text-subheading">
-                  Full Name <span className="required-star">*</span>
-                </h3>
+                <h3 className="text-subheading">Full Name</h3>
                 <Input
                   type="text"
                   label=""

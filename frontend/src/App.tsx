@@ -8,7 +8,6 @@ import { Match } from './pages/Match/Match';
 import { Swipe } from './pages/Swipe/Swipe';
 import { Chat } from './pages/Chat/Chat';
 import { Profile } from './pages/Profile/Profile';
-import { Pricing } from './pages/Pricing/Pricing';
 import { ProtectedRoute } from './components/ProtectedRoute/ProtectedRoute';
 import './styles/global.css';
 import './styles/components.css';
@@ -56,14 +55,6 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/pricing"
-          element={
-            <ProtectedRoute>
-              <Pricing />
-            </ProtectedRoute>
-          }
-        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
@@ -72,12 +63,7 @@ function AppRoutes() {
 
 function App() {
   return (
-    <BrowserRouter
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
+    <BrowserRouter>
       <AppRoutes />
     </BrowserRouter>
   );

@@ -178,94 +178,11 @@ export class UsersService {
   }
 
   /**
-   * Check if user can swipe (not exceeded daily limit)
+   * Record a swipe action (like or pass)
    */
-  async canSwipe(userId: string): Promise<{ canSwipe: boolean; remainingSwipes: number; isPremium: boolean }> {
-    const user = await this.findByUid(userId);
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    // Premium users have unlimited swipes
-    if (user.isPremium && user.subscriptionStatus === 'active') {
-      const expiresAt = user.premiumExpiresAt;
-      if (expiresAt && expiresAt > new Date()) {
-        return { canSwipe: true, remainingSwipes: -1, isPremium: true }; // -1 means unlimited
-      }
-    }
-
-    // Free users: 50 swipes per day
-    const DAILY_SWIPE_LIMIT = 50;
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-
-    const tracking = user.swipeTracking || { date: '', count: 0 };
-    
-    // Reset if it's a new day
-    if (tracking.date !== today) {
-      return { canSwipe: true, remainingSwipes: DAILY_SWIPE_LIMIT, isPremium: false };
-    }
-
-    const remainingSwipes = Math.max(0, DAILY_SWIPE_LIMIT - (tracking.count || 0));
-    return {
-      canSwipe: remainingSwipes > 0,
-      remainingSwipes,
-      isPremium: false,
-    };
-  }
-
-  /**
-   * Increment swipe count for user
-   */
-  async incrementSwipeCount(userId: string): Promise<void> {
-    const user = await this.findByUid(userId);
-    if (!user) return;
-
-    // Premium users don't need tracking
-    if (user.isPremium && user.subscriptionStatus === 'active') {
-      const expiresAt = user.premiumExpiresAt;
-      if (expiresAt && expiresAt > new Date()) {
-        return; // No need to track for premium users
-      }
-    }
-
-    const today = new Date().toISOString().split('T')[0];
-    const tracking = user.swipeTracking || { date: '', count: 0 };
-
-    if (tracking.date === today) {
-      // Increment count for today
-      await this.userModel.updateOne(
-        { uid: userId },
-        {
-          $set: {
-            'swipeTracking.count': (tracking.count || 0) + 1,
-          },
-        },
-      ).exec();
-    } else {
-      // Reset for new day
-      await this.userModel.updateOne(
-        { uid: userId },
-        {
-          $set: {
-            swipeTracking: {
-              date: today,
-              count: 1,
-            },
-          },
-        },
-      ).exec();
-    }
-  }
-
   async swipe(swiperId: string, swipedId: string, action: 'like' | 'pass'): Promise<{ isMatch: boolean; message?: string }> {
     if (swiperId === swipedId) {
       throw new Error('Cannot swipe on yourself');
-    }
-
-    // Check swipe limit
-    const swipeCheck = await this.canSwipe(swiperId);
-    if (!swipeCheck.canSwipe) {
-      throw new Error(`Daily swipe limit reached. ${swipeCheck.remainingSwipes} swipes remaining. Upgrade to Premium for unlimited swipes!`);
     }
 
     // Check if user already swiped on this person

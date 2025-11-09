@@ -20,10 +20,9 @@ async function bootstrap() {
     transform: true,
   }));
   
-  // Allow multiple frontend origins for testing (localhost:3000-3003)
+  // Allow multiple frontend origins for testing (localhost:3001, localhost:3002, etc.)
   const allowedOrigins = [
     process.env.FRONTEND_URL || 'http://localhost:3001',
-    'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3002',
     'http://localhost:3003',
@@ -41,9 +40,6 @@ async function bootstrap() {
         // In development, allow any localhost origin
         if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
           callback(null, true);
-        } else if (origin.includes('.onrender.com')) {
-          // Allow Render preview URLs (for PR previews and staging)
-          callback(null, true);
         } else {
           callback(new Error('Not allowed by CORS'));
         }
@@ -55,26 +51,26 @@ async function bootstrap() {
     maxAge: 86400, // Cache preflight requests for 24 hours
   });
 
-  // Serve static files from frontend build directory (for production)
-  // NestJS API routes will be handled first, then static files, then catch-all
-  const frontendBuildPath = join(__dirname, '../../frontend/build');
-  const expressApp = app.getHttpAdapter().getInstance();
-  
-  // Serve static files (CSS, JS, images, etc.)
-  expressApp.use(express.static(frontendBuildPath));
-  
-  // Catch-all handler: send back React's index.html file for client-side routing
-  // This handles all non-API routes and lets React Router handle routing
-  expressApp.get('*', (req, res, next) => {
-    // Skip API routes - let NestJS handle them (they should already be handled)
-    if (req.path.startsWith('/api/') || req.path.startsWith('/gestures/') || req.path.startsWith('/users/') || req.path.startsWith('/chat/') || req.path.startsWith('/subscriptions/')) {
-      return next(); // Let NestJS handle it
-    }
-    res.sendFile(join(frontendBuildPath, 'index.html'));
-  });
-
   try {
     const port = process.env.PORT || 3000;
+    
+    // Serve static files from frontend build in production (after app is ready)
+    if (process.env.NODE_ENV === 'production') {
+      const frontendBuildPath = join(__dirname, '..', '..', 'frontend', 'build');
+      app.use(express.static(frontendBuildPath));
+      
+      // Serve React app for all non-API routes (must be last)
+      app.get('*', (req, res, next) => {
+        // Skip API routes
+        if (req.path.startsWith('/api/') || req.path.startsWith('/users/') || 
+            req.path.startsWith('/gestures/') || req.path.startsWith('/chat/') ||
+            req.path.startsWith('/subscriptions/')) {
+          return next();
+        }
+        res.sendFile(join(frontendBuildPath, 'index.html'));
+      });
+    }
+    
     await app.listen(port);
     console.log(`Backend is running on: http://localhost:${port}`);
     

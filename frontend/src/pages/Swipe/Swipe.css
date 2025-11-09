@@ -221,99 +221,6 @@
   font-weight: 400;
 }
 
-.swipe-gesture-controls {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  width: 100%;
-  max-width: 480px;
-}
-
-.swipe-gesture-status-indicator {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 0;
-}
-
-.swipe-gesture-status-text {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-medium);
-}
-
-.swipe-gesture-status {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-dark);
-  text-align: center;
-  min-height: 1.25rem;
-}
-
-.swipe-gesture-instructions {
-  background: rgba(233, 203, 202, 0.3);
-  border: 0.0625rem solid rgba(218, 168, 166, 0.4);
-  border-radius: 0.875rem;
-  padding: 1rem 1.25rem;
-  margin: 0.75rem auto 1rem;
-  max-width: 480px;
-  width: 100%;
-  text-align: center;
-}
-
-.swipe-gesture-instructions-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--color-red-dark);
-  margin: 0 0 0.5rem 0;
-  letter-spacing: 0.01em;
-}
-
-.swipe-gesture-instructions-text {
-  font-size: 0.8125rem;
-  color: var(--text-dark);
-  line-height: 1.6;
-  margin: 0;
-  font-weight: 400;
-}
-
-.swipe-gesture-instructions-text strong {
-  color: var(--color-red-dark);
-  font-weight: 600;
-}
-
-.swipe-limit-display {
-  background: rgba(233, 203, 202, 0.4);
-  border: 0.125rem solid rgba(218, 168, 166, 0.5);
-  border-radius: 0.5rem;
-  padding: 0.75rem 1rem;
-  margin-bottom: 1rem;
-  text-align: center;
-  width: 100%;
-  max-width: 480px;
-}
-
-.swipe-limit-text-display {
-  text-align: center;
-  margin: 0.5rem 0 1rem 0;
-  font-size: 0.875rem;
-  color: var(--text-dark);
-}
-
-.swipe-limit-link {
-  color: var(--color-red-dark);
-  font-weight: 600;
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.swipe-limit-link:hover {
-  color: rgba(148, 0, 0, 0.8);
-  text-decoration: underline;
-}
-
 .swipe-actions {
   display: flex;
   gap: 1rem;
@@ -449,7 +356,7 @@
 
   .swipe-card-image-container {
     height: 240px;
-  }
+}
 
   .swipe-card-image-placeholder {
     font-size: 4rem;

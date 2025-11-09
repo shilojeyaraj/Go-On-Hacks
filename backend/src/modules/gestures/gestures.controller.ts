@@ -16,7 +16,13 @@ export class GesturesController {
     @Body() dto: GesturePredictionDto,
     @Request() req,
   ) {
+    console.log('[BACKEND] Received gesture prediction request');
+    console.log('[BACKEND] User ID:', req.user?.uid);
+    console.log('[BACKEND] Sequence length:', dto.sequence?.length);
+    console.log('[BACKEND] First frame features:', dto.sequence?.[0]?.length);
+
     if (!this.gesturesService.isModelLoaded()) {
+      console.log('[BACKEND] Model not loaded');
       return {
         success: false,
         error: 'Gesture recognition model is not loaded',
@@ -24,14 +30,17 @@ export class GesturesController {
     }
 
     try {
+      console.log('[BACKEND] Calling Python prediction script...');
       const result = await this.gesturesService.predictGesture(dto.sequence);
+      console.log('[BACKEND] Prediction result:', result);
       return {
         success: true,
         ...result,
         userId: req.user.uid,
       };
     } catch (error: any) {
-      // Only log actual errors, not expected behavior
+      console.error('[BACKEND] Prediction error:', error.message);
+      console.error('[BACKEND] Error stack:', error.stack);
       return {
         success: false,
         error: error.message,
@@ -41,10 +50,8 @@ export class GesturesController {
 
   @Post('status')
   getStatus() {
-    const isLoaded = this.gesturesService.isModelLoaded();
-    console.log('[BACKEND] 📊 Status check - Model loaded:', isLoaded);
     return {
-      modelLoaded: isLoaded,
+      modelLoaded: this.gesturesService.isModelLoaded(),
     };
   }
 }

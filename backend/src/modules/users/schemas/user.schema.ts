@@ -59,25 +59,18 @@ export class User {
   @Prop({ default: false })
   profileCompleted?: boolean;
 
-  // Premium subscription fields
+  // Subscription fields
   @Prop({ default: false })
   isPremium?: boolean;
 
   @Prop()
-  subscriptionId?: string; // Stripe subscription ID
+  subscriptionId?: string;
 
   @Prop()
-  subscriptionStatus?: string; // active, canceled, past_due, etc.
+  subscriptionStatus?: 'active' | 'canceled' | 'expired';
 
   @Prop()
   premiumExpiresAt?: Date;
-
-  // Daily swipe tracking
-  @Prop({ type: Object, default: {} })
-  swipeTracking?: {
-    date: string; // YYYY-MM-DD format
-    count: number;
-  };
 
   // Timestamps (automatically added by Mongoose when timestamps: true)
   createdAt?: Date;
