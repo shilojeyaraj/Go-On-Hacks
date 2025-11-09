@@ -251,13 +251,13 @@ export const Chat: React.FC = () => {
                   ) : (
                     <>
                       {messages.map((message) => (
-                        <div
-                          key={message.id}
-                          className={`chat-message ${message.isOwn ? 'chat-message--own' : ''}`}
-                        >
-                          <p className="chat-message-content">{message.content}</p>
-                          <span className="chat-message-time">{message.timestamp}</span>
-                        </div>
+                      <div
+                        key={message.id}
+                        className={`chat-message ${message.isOwn ? 'chat-message--own' : ''}`}
+                      >
+                        <p className="chat-message-content">{message.content}</p>
+                        <span className="chat-message-time">{message.timestamp}</span>
+                      </div>
                       ))}
                       <div ref={messagesEndRef} />
                     </>

@@ -30,7 +30,7 @@ export const Navigation: React.FC = () => {
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-    };
+  };
   }, [showDropdown]);
 
   if (loading) {
@@ -46,18 +46,18 @@ export const Navigation: React.FC = () => {
         </Link>
         {user && (
           <div className="nav-center-links">
-            <Link
-              to="/match"
+              <Link
+                to="/match"
               className={`nav-text-link ${location.pathname === '/match' ? 'nav-text-link--active' : ''}`}
-            >
-              Home
-            </Link>
-            <Link
-              to="/chat"
+              >
+                Home
+              </Link>
+              <Link
+                to="/chat"
               className={`nav-text-link ${location.pathname === '/chat' ? 'nav-text-link--active' : ''}`}
-            >
-              Chat
-            </Link>
+              >
+                Chat
+              </Link>
           </div>
         )}
         <div className="nav-right">
@@ -84,13 +84,13 @@ export const Navigation: React.FC = () => {
                     onClick={() => setShowDropdown(false)}
                   >
                     Profile
-                  </Link>
-                  <button
-                    onClick={handleLogout}
+              </Link>
+              <button
+                onClick={handleLogout}
                     className="nav-dropdown-item nav-dropdown-item--logout"
-                  >
-                    Logout
-                  </button>
+              >
+                Logout
+              </button>
                 </div>
               )}
             </div>

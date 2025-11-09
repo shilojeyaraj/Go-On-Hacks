@@ -18,15 +18,18 @@ const COLLAGE_IMAGES = [
 const BENEFITS = [
   {
     title: 'Make Your Profile',
-    description: 'Create a profile to chat with others. Show off your personality and find people who share your passions.'
+    description: 'Create a profile to chat with others. Show off your personality and find people who share your passions.',
+    image: '/why-toegether/make-profile.png'
   },
   {
     title: 'Start Chatting',
-    description: 'Connect and start chatting with feet enthusiasts. Build meaningful connections with like-minded people.'
+    description: 'Connect and start chatting with feet enthusiasts. Build meaningful connections with like-minded people.',
+    image: '/why-toegether/start-chatting.png'
   },
   {
     title: 'Be Genuine & Have Fun',
-    description: 'Be yourself and have fun with other feet enthusiasts. Enjoy authentic connections in a welcoming community.'
+    description: 'Be yourself and have fun with other feet enthusiasts. Enjoy authentic connections in a welcoming community.',
+    image: '/why-toegether/have-fun.png'
   }
 ];
 
@@ -96,7 +99,9 @@ export const Home: React.FC = () => {
             <div className="home-benefits-list">
               {BENEFITS.map((benefit, index) => (
                 <div key={index} className="home-benefit-item">
-                  <div className="home-benefit-bullet">👣</div>
+                  <div className="home-benefit-bullet">
+                    <img src={benefit.image} alt={benefit.title} className="home-benefit-image" />
+                  </div>
                   <div className="home-benefit-content">
                     <h3 className="home-benefit-title">{benefit.title}</h3>
                     <p className="home-benefit-description">{benefit.description}</p>
